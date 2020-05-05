@@ -41,6 +41,9 @@
 #define TBuffer 2306
 #define TBuffer2 100
 
+#define ADDITIONAL_DATA (const unsigned char *) "123456"
+#define ADDITIONAL_DATA_LEN 6
+
 int test_kem_cca()
 {
 
@@ -303,26 +306,41 @@ void exchange( int ClientSocket, const char *chemin) {
 
   // ENCRYTPION
   unsigned char *ciphertext[strlen((char*)mess) + crypto_aead_xchacha20poly1305_ietf_ABYTES];
-  unsigned char *ciphertext2[strlen((char*)mess) + crypto_aead_xchacha20poly1305_ietf_ABYTES];
   unsigned char *mk[crypto_auth_hmacsha256_BYTES];
   unsigned char *nonce[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES];
-  int safeReturn = RatchetEncrypt(&mk, &key_CKs, mess, &ciphertext2, &nonce);
+  printf("*cipher inside SERVER BEFORE:%u\n", *ciphertext);
+  printf("cipher inside SERVER BEFORE:%u\n", ciphertext);
+  printf("------- \n");
+  int safeReturn = RatchetEncrypt(mk, &key_CKs, mess, ciphertext, nonce);
   printf("---- \n");
-  printf("cipher inside SERVER  : %u\n", ciphertext2);
+
+  printf("*cipher inside SERVER AFTER:%u\n", *ciphertext);
+  printf("cipher inside SERVER  AFTER: %u\n", ciphertext);
   /*
-  *ciphertext = ciphertext2;
-  printf("cipher inside SERVER alloc  : %u\n", ciphertext);
+  *ciphertext = &ciphertext2;
+  printf("*cipher new inside SERVER AFTER:%u\n", *ciphertext);
+  printf("cipher new inside SERVER  AFTER: %u\n", ciphertext);
   */
-  printf("nonce inside SERVER : %u\n", nonce);
-  printf("mk inside SERVER : %u\n", mk);
+
+  printf("nonce inside SERVER AFTER: %u\n", nonce);
+  printf("mk inside SERVER AFTER: %u\n", mk);
   // DECRYPTION
-  printf("ON EST LA \n");
   unsigned long long len_plain = strlen((char*)mess);
-  printf("ON EST LA 2.1 \n");
-  printf("Very Large Number Message : %lld \n", len_plain );
-  printf("ON EST LA 2.2 \n");
-  safeReturn = DECRYPT(&mk, len_plain, &ciphertext2, &nonce);
-  printf("ON EST PAS LA \n");
+  printf("Very Large Message : %lld \n", len_plain );
+
+  printf("TEST DECRYPT INSIDE SERVER: \n");
+  unsigned char decrypted[strlen((char*)mess)];
+  unsigned long long decrypted_len;
+  unsigned long long ciphertext_len = strlen((char*)mess) + crypto_aead_xchacha20poly1305_ietf_ABYTES;
+  if (crypto_aead_xchacha20poly1305_ietf_decrypt(decrypted, &decrypted_len, NULL, ciphertext, ciphertext_len, ADDITIONAL_DATA, ADDITIONAL_DATA_LEN, nonce, mk) != 0) {
+    printf("error encrypting ciphertext \n");
+  } else {
+    printf("cipher decrypted  : %s\n", decrypted);
+  }
+
+  printf("------------------------------ \n");
+  printf("----------- APPEL FONCTION DECRYPT ------------------- \n");
+  safeReturn = DECRYPT(&mk, len_plain, &ciphertext, &nonce);
 
 
   /*

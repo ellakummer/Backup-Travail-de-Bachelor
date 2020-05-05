@@ -26,28 +26,22 @@ https://github.com/jedisct1/libsodium/blob/master/src/libsodium/include/sodium/c
 //DECRYPT(mk, ciphertext, CONCAT(AD, header))
 // https://libsodium.gitbook.io/doc/secret-key_cryptography/aead/chacha20-poly1305/xchacha20-poly1305_construction
 
-int DECRYPT(unsigned char *mk[crypto_auth_hmacsha256_BYTES], unsigned long long len_plain, unsigned char *ciphertext[len_plain + crypto_aead_xchacha20poly1305_ietf_ABYTES], unsigned char *nonce[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES])
+int DECRYPT(unsigned char mk[crypto_auth_hmacsha256_BYTES], unsigned long long len_plain, unsigned char ciphertext[len_plain + crypto_aead_xchacha20poly1305_ietf_ABYTES], unsigned char nonce[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES])
 {
   printf("cipher inside Decrypt  : %u\n", ciphertext);
   printf("nonce inside Decrypt : %u\n", nonce);
   printf("mk inside Decrypt : %u\n", mk);
 
-  printf("ON EST LA 3\n");
   unsigned long long ciphertext_len = len_plain + crypto_aead_xchacha20poly1305_ietf_ABYTES;
-  printf("ON EST LA 4\n");
   // decrypt (test for the moment):
-  printf("Very Large Number Message : %lld \n", len_plain );
+  printf("Very Large Message : %lld \n", len_plain );
   unsigned char decrypted[len_plain];
-  printf("ON EST LA 5.0 \n");
   unsigned long long decrypted_len;
-  printf("ON EST LA 5\n");
   if (crypto_aead_xchacha20poly1305_ietf_decrypt(decrypted, &decrypted_len, NULL, ciphertext, ciphertext_len, ADDITIONAL_DATA, ADDITIONAL_DATA_LEN, nonce, mk) != 0) {
     printf("error decrypting ciphertext \n");
   } else {
     printf("cipher decrypted  : %s\n", decrypted);
   }
-  printf("ON EST LA 6\n");
-
 
  	return 0;
 }

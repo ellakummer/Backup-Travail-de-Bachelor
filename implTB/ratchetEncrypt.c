@@ -103,15 +103,19 @@ int ENCRYPT(unsigned char mk[crypto_aead_xchacha20poly1305_ietf_KEYBYTES], unsig
   printf("-- START LIBSODIUM AED USE -- \n");
 
   //unsigned char nonce[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES];
-  //unsigned char ciphertext[strlen((char*)plaintext) + crypto_aead_xchacha20poly1305_ietf_ABYTES];
+  //unsigned char ciphertex_inter[strlen((char*)plaintext) + crypto_aead_xchacha20poly1305_ietf_ABYTES];
   unsigned long long ciphertext_len;
 
 
   randombytes_buf(nonce_inter, sizeof nonce_inter);
   printf("test NONCE : %u\n", nonce_inter);
 
-  crypto_aead_xchacha20poly1305_ietf_encrypt(ciphertext_inter, &ciphertext_len, plaintext, strlen((char*)plaintext), ADDITIONAL_DATA, ADDITIONAL_DATA_LEN, NULL, nonce_inter, mk);
+  printf("*cipher inside Encrypt  : %u\n", *ciphertext_inter);
   printf("cipher inside Encrypt  : %u\n", ciphertext_inter);
+  crypto_aead_xchacha20poly1305_ietf_encrypt(ciphertext_inter, &ciphertext_len, plaintext, strlen((char*)plaintext), ADDITIONAL_DATA, ADDITIONAL_DATA_LEN, NULL, nonce_inter, mk);
+  printf("*cipher inside Encrypt  : %u\n", *ciphertext_inter);
+  printf("cipher inside Encrypt  : %u\n", ciphertext_inter);
+  printf("DEDUCT * CHANGE \n");
 
   // decrypt (test for the moment):
   unsigned char decrypted[strlen((char*)plaintext)];
@@ -142,34 +146,83 @@ int RatchetEncrypt(unsigned char *mk[crypto_auth_hmacsha256_BYTES], unsigned cha
   }
   */
   printf("test mess RECEIVED TO ENCRYPT :%s\n", plaintext);
+  printf("test mess RECEIVED CIPHERTEXT :%u\n", ciphertext);
+  printf("test mess RECEIVED *CIPHERTEXT :%u\n", *ciphertext);
 
-  /*
   printf("TEST ReturnKDF_CK : \n");
-  struct ReturnKDF_CK returnKDF;
-  KDF_CK2(&returnKDF, CKs);
-  printf("test  returnKDF.CKs inside ratchetEncrypt : %u\n", returnKDF.CKs);
-  printf("test  returnKDF.mk inside ratchetEncrypt : %u\n", returnKDF.mk);
-  */
-  printf("TEST ReturnKDF_CK : \n");
-  unsigned char *mk_inter[crypto_auth_hmacsha256_BYTES];
-  unsigned char *CKs_inter[crypto_auth_hmacsha256_KEYBYTES];
-  unsigned char *nonce_inter[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES];
-  unsigned char *ciphertext_inter[strlen((char*)plaintext) + crypto_aead_xchacha20poly1305_ietf_ABYTES];
+  unsigned char mk_inter[crypto_auth_hmacsha256_BYTES];
+  unsigned char CKs_inter[crypto_auth_hmacsha256_KEYBYTES];
+  unsigned char nonce_inter[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES];
+  unsigned char ciphertext_inter[strlen((char*)plaintext) + crypto_aead_xchacha20poly1305_ietf_ABYTES];
 
-  KDF_CK(&mk_inter, &CKs_inter);
+  //KDF_CK(&mk_inter, &CKs_inter);
+  KDF_CK(mk, &CKs_inter);
   printf("test  returnKDF.CKs inside ratchetEncrypt : %u\n", CKs_inter);
+  /*
   printf("test  returnKDF.mk inside ratchetEncrypt : %u\n", mk_inter);
-  CKs = &CKs_inter;
   mk = &mk_inter;
+  */
+  CKs = &CKs_inter;
   printf("test changed returnKDF Cks inside ratchetEncrypt : %u\n", CKs);
   printf("test changed returnKDF mk inside ratchetEncrypt : %u\n", mk);
 
+  /*
+  printf("------------- for INTER BEFORE CHANGE: \n");
+  printf(" *ciphertext inter : %u\n", *ciphertext_inter);
+  printf("ciphertext inter : %u\n", ciphertext_inter);
+  */
+  /*
   int safeReturn = ENCRYPT(mk, plaintext, &ciphertext_inter, &nonce_inter);
-  nonce = &nonce_inter;
   ciphertext = &ciphertext_inter;
-  printf("test changed nonce inside ratchetEncrypt : %u\n", nonce);
-  //printf("test NOT changed ciphertext inside ratchetEncrypt : %u\n", ciphertext_inter);
-  printf("test changed ciphertext inside ratchetEncrypt : %u\n", ciphertext);
+  */
+  /*
+  int safeReturn = ENCRYPT(mk, plaintext, ciphertext, &nonce_inter);
+  nonce = &nonce_inter;
+  */
+  int safeReturn = ENCRYPT(mk, plaintext, ciphertext, nonce);
+
+
+
+  // NO :
+  //*ciphertext = &ciphertext_inter;
+  //*ciphertext = *ciphertext_inter;
+
+  /*
+  *ciphertext = ciphertext_inter; // DOESNT CHANGE ANYTHING
+  ciphertext = *ciphertext; // BOTH TOGETHER -> ONLY HERE CHANGE
+  *ciphertext = ciphertext;
+  */ // HERREEE
+
+  /*
+  ciphertext = ciphertext_inter;
+  *ciphertext = ciphertext;
+  */
+  //*ciphertext = ciphertext_inter;
+  /*
+  printf("------------ for INTER AFTER CHANGE: \n");
+  printf(" *ciphertext inter : %u\n", *ciphertext_inter);
+  printf("ciphertext inter : %u\n", ciphertext_inter);  */
+  printf("------------ for  AFTER CHANGE: \n");
+  printf("test changed MY nonce inside ratchetEncrypt : %u\n", nonce);
+  printf("test changed MY *ciphertext inside ratchetEncrypt : %u\n", *ciphertext);
+  printf("test changed MY ciphertext inside ratchetEncrypt : %u\n", ciphertext);
+
+
+
+
+  printf("TEST DECRYPT OUTSIDE FUNCTION WITH MY CIPHERTEXT: \n");
+  unsigned char decrypted[strlen((char*)plaintext)];
+  unsigned long long decrypted_len;
+  unsigned long long ciphertext_len = strlen((char*)plaintext) + crypto_aead_xchacha20poly1305_ietf_ABYTES;
+  if (crypto_aead_xchacha20poly1305_ietf_decrypt(decrypted, &decrypted_len, NULL, ciphertext, ciphertext_len, ADDITIONAL_DATA, ADDITIONAL_DATA_LEN, nonce, mk) != 0) {
+    printf("error encrypting ciphertext");
+  } else {
+    printf("cipher decrypted  : %s\n", decrypted);
+  }
+
+  //*ciphertext = &ciphertext_inter;
+
+  printf("--------- END INSIDE FUNCTION ----------- \n");
 
 	return 0;
 }
