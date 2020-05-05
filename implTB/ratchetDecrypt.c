@@ -31,6 +31,9 @@ int DECRYPT(unsigned char mk[crypto_auth_hmacsha256_BYTES], unsigned long long l
   printf("cipher inside Decrypt  : %u\n", ciphertext);
   printf("nonce inside Decrypt : %u\n", nonce);
   printf("mk inside Decrypt : %u\n", mk);
+  printf("*cipher inside Decrypt  : %u\n", *ciphertext);
+  printf("*nonce inside Decrypt : %u\n", *nonce);
+  printf("*mk inside Decrypt : %u\n", *mk);
 
   unsigned long long ciphertext_len = len_plain + crypto_aead_xchacha20poly1305_ietf_ABYTES;
   // decrypt (test for the moment):
