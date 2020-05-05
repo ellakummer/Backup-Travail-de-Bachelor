@@ -12,9 +12,9 @@ CFLAGS5=-Wall -Wextra -g -fomit-frame-pointer -march=native --pedantic -std=c99
 all: test/PQCgenKAT_kem \
      test/test_kex \
      test/kem \
-		 randClient2 \
-		 randServer2 \
-		 ratchettest \
+     randClient2 \
+     randServer2 \
+
 
 SOURCES = pack_unpack.c poly.c rng.c fips202.c verify.c cbd.c SABER_indcpa.c kem.c
 HEADERS = SABER_params.h pack_unpack.h poly.h rng.h fips202.h verify.h cbd.h SABER_indcpa.h kem.h
@@ -51,13 +51,10 @@ randClient2: common.c $(SOURCES) common.h $(HEADERS) randClient2.c
 randServer2: common.c dh.c ratchetEncrypt.c ratchetDecrypt.c $(SOURCES) common.h dh.h ratchetEncrypt.h ratchetDecrypt.h $(HEADERS) randServer2.c
 	$(CC) $(CFLAGS4) -o $@ common.c dh.c ratchetEncrypt.c ratchetDecrypt.c $(SOURCES) randServer2.c -lcrypto -lsodium
 
-ratchettest: common.c $(SOURCES) common.h $(HEADERS) ratchettest.c
-	$(CC) $(CFLAGS4) -o $@ common.c $(SOURCES) ratchettest.c -lcrypto
-
 
 clean:
 	-$(RM) *.o
 	-$(RM) -r test/test_kex
 	-$(RM) -r test/kem
 	-$(RM) -r test/PQCgenKAT_kem
-	rm -rf *.o randClient2 randServer2 ratchettest dh
+	rm -rf *.o randClient2 randServer2 dh
