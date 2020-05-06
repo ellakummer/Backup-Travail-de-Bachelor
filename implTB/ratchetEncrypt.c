@@ -60,10 +60,10 @@ int KDF_CK(unsigned char *mk[crypto_auth_hmacsha256_BYTES], unsigned char *CKs[c
   printf("test inside before hash :%u\n", CKs);
   printf("test inside brefore hash :%u\n", mk);
 
-  if (return_hmac1 = crypto_auth_hmacsha256(CKs, in1, strlen((char*)in1), CKs) != 0) {
+  if (return_hmac1 = crypto_auth_hmacsha256(mk, in1, strlen((char*)in1), CKs) != 0) {
     printf("error in hmac-sha256\n");
   }
-  if (return_hmac2 = crypto_auth_hmacsha256(mk, in2, strlen((char*)in2), CKs) != 0) {
+  if (return_hmac2 = crypto_auth_hmacsha256(CKs, in2, strlen((char*)in2), CKs) != 0) {
     printf("error in hmac-sha256\n");
   }
 
@@ -150,58 +150,22 @@ int RatchetEncrypt(unsigned char *mk[crypto_auth_hmacsha256_BYTES], unsigned cha
   printf("test mess RECEIVED *CIPHERTEXT :%u\n", *ciphertext);
 
   printf("TEST ReturnKDF_CK : \n");
+  /*
   unsigned char mk_inter[crypto_auth_hmacsha256_BYTES];
-  unsigned char CKs_inter[crypto_auth_hmacsha256_KEYBYTES];
   unsigned char nonce_inter[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES];
   unsigned char ciphertext_inter[strlen((char*)plaintext) + crypto_aead_xchacha20poly1305_ietf_ABYTES];
-
-  //KDF_CK(&mk_inter, &CKs_inter);
-  KDF_CK(mk, &CKs_inter);
-  printf("test  returnKDF.CKs inside ratchetEncrypt : %u\n", CKs_inter);
-  /*
-  printf("test  returnKDF.mk inside ratchetEncrypt : %u\n", mk_inter);
-  mk = &mk_inter;
   */
-  CKs = &CKs_inter;
+  unsigned char CKs_inter[crypto_auth_hmacsha256_KEYBYTES];
+
+
+  KDF_CK(mk, CKs);
+  printf("test  returnKDF.CKs inside ratchetEncrypt : %u\n", CKs_inter);
   printf("test changed returnKDF Cks inside ratchetEncrypt : %u\n", CKs);
   printf("test changed returnKDF mk inside ratchetEncrypt : %u\n", mk);
 
-  /*
-  printf("------------- for INTER BEFORE CHANGE: \n");
-  printf(" *ciphertext inter : %u\n", *ciphertext_inter);
-  printf("ciphertext inter : %u\n", ciphertext_inter);
-  */
-  /*
-  int safeReturn = ENCRYPT(mk, plaintext, &ciphertext_inter, &nonce_inter);
-  ciphertext = &ciphertext_inter;
-  */
-  /*
-  int safeReturn = ENCRYPT(mk, plaintext, ciphertext, &nonce_inter);
-  nonce = &nonce_inter;
-  */
+
   int safeReturn = ENCRYPT(mk, plaintext, ciphertext, nonce);
 
-
-
-  // NO :
-  //*ciphertext = &ciphertext_inter;
-  //*ciphertext = *ciphertext_inter;
-
-  /*
-  *ciphertext = ciphertext_inter; // DOESNT CHANGE ANYTHING
-  ciphertext = *ciphertext; // BOTH TOGETHER -> ONLY HERE CHANGE
-  *ciphertext = ciphertext;
-  */ // HERREEE
-
-  /*
-  ciphertext = ciphertext_inter;
-  *ciphertext = ciphertext;
-  */
-  //*ciphertext = ciphertext_inter;
-  /*
-  printf("------------ for INTER AFTER CHANGE: \n");
-  printf(" *ciphertext inter : %u\n", *ciphertext_inter);
-  printf("ciphertext inter : %u\n", ciphertext_inter);  */
   printf("------------ for  AFTER CHANGE: \n");
   printf("test changed MY nonce inside ratchetEncrypt : %u\n", nonce);
   printf("test changed MY *ciphertext inside ratchetEncrypt : %u\n", *ciphertext);
@@ -220,7 +184,6 @@ int RatchetEncrypt(unsigned char *mk[crypto_auth_hmacsha256_BYTES], unsigned cha
     printf("cipher decrypted  : %s\n", decrypted);
   }
 
-  //*ciphertext = &ciphertext_inter;
 
   printf("--------- END INSIDE FUNCTION ----------- \n");
 

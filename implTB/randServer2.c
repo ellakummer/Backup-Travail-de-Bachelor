@@ -14,7 +14,6 @@
 
 #include <sodium.h>
 
-
 #include "common.h"
 
 #include "api.h"
@@ -26,6 +25,9 @@
 
 #include "dh.h"
 #include "ratchetEncrypt.h"
+#include "ratchetDecrypt.h"
+
+
 /*
 #include "cpucycles.c"
 */
@@ -289,6 +291,8 @@ void exchange( int ClientSocket, const char *chemin) {
   printf("---------------------------------------\n");
   printf("DEBUT TEST RATCHET ENCRYPT \n");
 
+  int state_Ns = 0;
+
   printf("tests LENGTHS (check same size : perfect): \n");
   printf("libsodium : crypto_auth_hmacsha256_BYTES for kdf: %d\n", crypto_auth_hmacsha256_BYTES);
   printf("libsodium : crypto_auth_hmacsha256_KEYBYTES for kdf: %d\n", crypto_auth_hmacsha256_KEYBYTES);
@@ -298,15 +302,23 @@ void exchange( int ClientSocket, const char *chemin) {
 
   // KEY SEE HOW !! -> same size as SABER YES can use ss_a_server
   //testKDF = RatchetEncrypt(ss_a_server);
-  unsigned char key_CKs[crypto_auth_hmacsha256_KEYBYTES];
+  unsigned char *key_CKs[crypto_auth_hmacsha256_KEYBYTES];
+  unsigned char *key_CKr[crypto_auth_hmacsha256_KEYBYTES];
   crypto_auth_hmacsha256_keygen(key_CKs);
+  printf("*CKs inside SERVER BEFORE:%u\n", *key_CKs);
+  printf("CKs inside SERVER BREFORE:%u\n", key_CKs);
+  *key_CKr = *key_CKs;
+  printf("*CKr inside SERVER BEFORE:%u\n", *key_CKr);
+  printf("CKr inside SERVER BREFORE:%u\n", key_CKr);
 
   // MESSAGE TO ENCRYPT
-  //const unsigned char* mess = (const unsigned char*) "test on y croit";
+  const unsigned char* mess = (const unsigned char*) "test on y croit";
+  /*
   char mess_inter[MaxBuff];
   printf("Write the message to encrypt :  ");
   fgets(mess_inter, MaxBuff, stdin);
   const unsigned char* mess = (const unsigned char*) mess_inter;
+  */
 
 
   // ENCRYTPION
@@ -316,24 +328,24 @@ void exchange( int ClientSocket, const char *chemin) {
   printf("*cipher inside SERVER BEFORE:%u\n", *ciphertext);
   printf("cipher inside SERVER BEFORE:%u\n", ciphertext);
   printf("------- \n");
-  //int safeReturn = RatchetEncrypt(mk, &key_CKs, mess, ciphertext, nonce);
-  int safeReturn = RatchetEncrypt(mk, &ss_a_server, mess, ciphertext, nonce);
+  int safeReturn = RatchetEncrypt(mk, key_CKs, mess, ciphertext, nonce);
+  state_Ns += 1;
+  //int safeReturn = RatchetEncrypt(mk, &ss_a_server, mess, ciphertext, nonce);
   printf("---- \n");
-
+  printf("*CKs inside SERVER AFTER:%u\n", *key_CKs);
+  printf("CKs inside SERVER AFTER:%u\n", key_CKs);
+  printf("*CKr inside SERVER AFTER:%u\n", *key_CKr);
+  printf("CKr inside SERVER AFTER:%u\n", key_CKr);
   printf("*cipher inside SERVER AFTER:%u\n", *ciphertext);
   printf("cipher inside SERVER  AFTER: %u\n", ciphertext);
-  /*
-  *ciphertext = &ciphertext2;
-  printf("*cipher new inside SERVER AFTER:%u\n", *ciphertext);
-  printf("cipher new inside SERVER  AFTER: %u\n", ciphertext);
-  */
-
   printf("nonce inside SERVER AFTER: %u\n", nonce);
   printf("mk inside SERVER AFTER: %u\n", mk);
+  printf("*mk inside SERVER AFTER: %u\n", *mk);
+
   // DECRYPTION
   unsigned long long len_plain = strlen((char*)mess);
   printf("Very Large Message : %lld \n", len_plain );
-
+  /*
   printf("TEST DECRYPT INSIDE SERVER: \n");
   unsigned char decrypted[strlen((char*)mess)];
   unsigned long long decrypted_len;
@@ -343,16 +355,33 @@ void exchange( int ClientSocket, const char *chemin) {
   } else {
     printf("cipher decrypted  : %s\n", decrypted);
   }
+  */
+
 
   printf("------------------------------ \n");
-  printf("----------- APPEL FONCTION DECRYPT ------------------- \n");
-  safeReturn = DECRYPT(&mk, len_plain, &ciphertext, &nonce);
+  printf("----------- APPEL FONCTION RATCHET DECRYPT ------------------- \n");
+  safeReturn = ratchetDecrypt(mk, len_plain, ciphertext, nonce, key_CKr);
 
+  printf("------------------------------ \n");
+  printf("----------- ECHANGE ENCRYPTE ------------------- \n");
+  // LE CLIENT A BESOIN DE : mk, len_plain, ciphertext, nonce
 
   /*
-  printf("cipher inside server : %u\n", ciphertext);
+  char discussion[MaxBuff];
+  printf("Entrez le message  :  ");
+  fgets(discussion, MaxBuff, stdin);
   */
-  //int testRatchetEncrypt = RatchetEncrypt(key_CKs, mess);
+
+  printf("mk inside SERVER AFTER: %u\n", mk);
+  printf("*mk inside SERVER AFTER: %u\n", *mk);
+
+  send(ClientSocket,&(*mk),sizeof(mk), NULL);
+  /*
+  send(ClientSocket,&discussion,sizeof(discussion), NULL);
+  send(ClientSocket,&discussion,sizeof(discussion), NULL);
+  send(ClientSocket,&discussion,sizeof(discussion), NULL);
+  */
+
 
   printf("---------------------------------------\n");
 

@@ -12,8 +12,9 @@
 #include <fcntl.h>
 #include <assert.h>
 
-
 #include "common.h"
+
+#include <sodium.h>
 
 #include "api.h"
 #include "poly.h"
@@ -21,13 +22,20 @@
 #include "SABER_indcpa.h"
 #include "kem.h"
 #include "verify.h"
+
 #include "dh.h"
+#include "ratchetEncrypt.h"
+#include "ratchetDecrypt.h"
 
 #define MaxConnectionsAttentes 2306
 #define MaxBuff 2306
 #define MaxChemin 2306
 #define TBuffer 2306
 #define TBuffer2 100
+
+
+#define ADDITIONAL_DATA (const unsigned char *) "123456"
+#define ADDITIONAL_DATA_LEN 6
 
 
 /* Prépare l'adresse du serveur */
@@ -143,6 +151,25 @@ int main(int argc, char *argv[]) {
   printf("%s \n", dataConf2);
 
   printf("DIS MOI QUE TU PRINT STP STP STP PLEIN D'AMOUR \n");
+
+
+  printf("------------------------------------- \n");
+  printf("----------- ECHANGE ENCRYPT (ICI DECRYPT) ------------------- \n");
+  // LE CLIENT A BESOIN DE : mk, len_plain, ciphertext, nonce
+  char *mk;
+  mk = (char*) malloc( MaxBuff );
+  if (recv( ServerSocket, mk, MaxBuff, NULL) >= 0) {
+    printf( "Received: " );
+    printf("%s \n", mk);
+    n = -1;
+  }
+
+  // Waiting
+  unsigned char *key_CKr[crypto_auth_hmacsha256_KEYBYTES];
+  crypto_auth_hmacsha256_keygen(key_CKr);
+  /*
+  safeReturn = ratchetDecrypt(mk, len_plain, ciphertext, nonce, key_CKr);
+  */
 
   printf("--------------------------------------- \n");
   printf("DEBUT TEST DISCUSION \n");
