@@ -302,7 +302,12 @@ void exchange( int ClientSocket, const char *chemin) {
   crypto_auth_hmacsha256_keygen(key_CKs);
 
   // MESSAGE TO ENCRYPT
-  const unsigned char* mess = (const unsigned char*) "test on y croit";
+  //const unsigned char* mess = (const unsigned char*) "test on y croit";
+  char mess_inter[MaxBuff];
+  printf("Write the message to encrypt :  ");
+  fgets(mess_inter, MaxBuff, stdin);
+  const unsigned char* mess = (const unsigned char*) mess_inter;
+
 
   // ENCRYTPION
   unsigned char *ciphertext[strlen((char*)mess) + crypto_aead_xchacha20poly1305_ietf_ABYTES];
@@ -311,7 +316,8 @@ void exchange( int ClientSocket, const char *chemin) {
   printf("*cipher inside SERVER BEFORE:%u\n", *ciphertext);
   printf("cipher inside SERVER BEFORE:%u\n", ciphertext);
   printf("------- \n");
-  int safeReturn = RatchetEncrypt(mk, &key_CKs, mess, ciphertext, nonce);
+  //int safeReturn = RatchetEncrypt(mk, &key_CKs, mess, ciphertext, nonce);
+  int safeReturn = RatchetEncrypt(mk, &ss_a_server, mess, ciphertext, nonce);
   printf("---- \n");
 
   printf("*cipher inside SERVER AFTER:%u\n", *ciphertext);
