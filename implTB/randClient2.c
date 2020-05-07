@@ -156,20 +156,68 @@ int main(int argc, char *argv[]) {
   printf("------------------------------------- \n");
   printf("----------- ECHANGE ENCRYPT (ICI DECRYPT) ------------------- \n");
   // LE CLIENT A BESOIN DE : mk, len_plain, ciphertext, nonce
-  char *mk;
-  mk = (char*) malloc( MaxBuff );
-  if (recv( ServerSocket, mk, MaxBuff, NULL) >= 0) {
-    printf( "Received: " );
-    printf("%s \n", mk);
-    n = -1;
+
+  unsigned long long len_plain;
+  //char *len_plain;
+  //len_plain = (char*) malloc( MaxBuff );
+  if (recv( ServerSocket, len_plain, MaxBuff, NULL) >= 0) {
+    printf("len_plain inside CLIENT: %u\n", len_plain);
+  } else {
+    printf("soucis in receiving len_plain \n");
+    len_plain = 15;
   }
 
-  // Waiting
   unsigned char *key_CKr[crypto_auth_hmacsha256_KEYBYTES];
   crypto_auth_hmacsha256_keygen(key_CKr);
   /*
-  safeReturn = ratchetDecrypt(mk, len_plain, ciphertext, nonce, key_CKr);
+  const unsigned char* mess = (const unsigned char*) "GO GO GO";
+  len_plain = strlen((char*)mess);
   */
+  unsigned char *ciphertext[len_plain + crypto_aead_xchacha20poly1305_ietf_ABYTES];
+  unsigned char *mk[crypto_auth_hmacsha256_BYTES];
+  unsigned char *nonce[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES];
+  /*
+  printf("yaaaaaaaaaaaaaaaaaas \n");
+  int safeReturn = RatchetEncrypt(mk, key_CKr, mess, ciphertext, nonce);
+  safeReturn = ratchetDecrypt(mk, len_plain, ciphertext, nonce, key_CKr);
+  printf("yaaaaaaaaaaaaaaaaaas 22222222222222 \n");
+  */
+
+  //char *mk;
+  //mk = (char*) malloc( MaxBuff );
+  if (recv( ServerSocket, mk, MaxBuff, NULL) >= 0) {
+    printf("mk inside CLIENT: %u\n", mk);
+    printf("*mk inside CLIENT: %u\n", *mk);
+  }  else {
+    printf("soucis in receiving mk \n");
+  }
+
+  //char *ciphertext;
+  //ciphertext = (char*) malloc( MaxBuff );
+  if (recv( ServerSocket, ciphertext, MaxBuff, NULL) >= 0) {
+    printf("ciphertext inside CLIENT: %u\n", ciphertext);
+    printf("*ciphertext inside CLIENT: %u\n", *ciphertext);
+  }  else {
+    printf("soucis in receiving ciphertext \n");
+  }
+  /*
+  //char *nonce;
+  //nonce = (char*) malloc( MaxBuff );
+  if (recv( ServerSocket, nonce, MaxBuff, NULL) >= 0) {
+    printf("nonce inside CLIENT: %u\n", nonce);
+    printf("*nonce inside CLIENT: %u\n", *nonce);
+  }  else {
+    printf("soucis in receiving nonce \n");
+  }
+  */
+
+  // Waiting
+  /*
+  unsigned char *key_CKr[crypto_auth_hmacsha256_KEYBYTES];
+  crypto_auth_hmacsha256_keygen(key_CKr);
+  */
+
+  //int safeReturn2 = ratchetDecrypt(mk, len_plain, ciphertext, nonce, key_CKr);
 
   printf("--------------------------------------- \n");
   printf("DEBUT TEST DISCUSION \n");

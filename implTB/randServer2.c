@@ -339,6 +339,7 @@ void exchange( int ClientSocket, const char *chemin) {
   printf("*cipher inside SERVER AFTER:%u\n", *ciphertext);
   printf("cipher inside SERVER  AFTER: %u\n", ciphertext);
   printf("nonce inside SERVER AFTER: %u\n", nonce);
+  //printf("*nonce inside SERVER AFTER: %u\n", *nonce);
   printf("mk inside SERVER AFTER: %u\n", mk);
   printf("*mk inside SERVER AFTER: %u\n", *mk);
 
@@ -371,17 +372,23 @@ void exchange( int ClientSocket, const char *chemin) {
   printf("Entrez le message  :  ");
   fgets(discussion, MaxBuff, stdin);
   */
+  printf("len_plain inside SERVER AFTER: %u\n", len_plain);
+  send(ClientSocket,&len_plain,sizeof(len_plain), NULL);
 
   printf("mk inside SERVER AFTER: %u\n", mk);
   printf("*mk inside SERVER AFTER: %u\n", *mk);
+  send(ClientSocket,&mk,sizeof(mk), NULL);
 
-  send(ClientSocket,&(*mk),sizeof(mk), NULL);
+  printf("ciphertext inside SERVER AFTER: %u\n", ciphertext);
+  printf("*ciphertext inside SERVER AFTER: %u\n", *ciphertext);
+
+  send(ClientSocket,&ciphertext,sizeof(ciphertext), NULL);
+/*
+  printf("nonce inside SERVER AFTER: %u\n", nonce);
+  printf("*nonce inside SERVER AFTER: %u\n", *nonce);
   /*
-  send(ClientSocket,&discussion,sizeof(discussion), NULL);
-  send(ClientSocket,&discussion,sizeof(discussion), NULL);
-  send(ClientSocket,&discussion,sizeof(discussion), NULL);
+  send(ClientSocket,&nonce,sizeof(nonce), NULL);
   */
-
 
   printf("---------------------------------------\n");
 
