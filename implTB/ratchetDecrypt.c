@@ -111,8 +111,8 @@ int ratchetDecrypt(unsigned char mk[crypto_auth_hmacsha256_BYTES], unsigned long
   KDF_CKr(mk_inter, CKr);
   printf("mk BEFORE DECRYPT: %u\n", mk);
   printf("*mk BEFORE DECRYPT: %u\n", *mk);
-  printf("mk inter BEFORE DECRYPT: %u\n", mk_inter);
-  printf("*mk inter BEFORE DECRYPT: %u\n", *mk_inter);
+  //printf("mk inter BEFORE DECRYPT: %u\n", mk_inter);
+  //printf("*mk inter BEFORE DECRYPT: %u\n", *mk_inter);
 
   int safeReturn = DECRYPT(mk, len_plain, ciphertext, nonce);
   /*

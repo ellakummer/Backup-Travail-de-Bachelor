@@ -157,25 +157,43 @@ int main(int argc, char *argv[]) {
   printf("----------- ECHANGE ENCRYPT (ICI DECRYPT) ------------------- \n");
   // LE CLIENT A BESOIN DE : mk, len_plain, ciphertext, nonce
 
+  unsigned char confirm2[MaxBuff] = "confirm2";
+  printf("%s \n", confirm2);
+  send(ServerSocket, &confirm2, sizeof(confirm2), NULL);
+
   unsigned long long len_plain;
   //char *len_plain;
   //len_plain = (char*) malloc( MaxBuff );
+/*
   if (recv( ServerSocket, len_plain, MaxBuff, NULL) >= 0) {
     printf("len_plain inside CLIENT: %u\n", len_plain);
   } else {
     printf("soucis in receiving len_plain \n");
     len_plain = 15;
   }
+*/
 
+/*
+  unsigned char confirm[MaxBuff] = "okreceived";
+  send(ServerSocket,&confirm,MaxBuff, NULL);
+*/
   unsigned char *key_CKr[crypto_auth_hmacsha256_KEYBYTES];
   crypto_auth_hmacsha256_keygen(key_CKr);
   /*
   const unsigned char* mess = (const unsigned char*) "GO GO GO";
   len_plain = strlen((char*)mess);
   */
+  len_plain = 15;
   unsigned char *ciphertext[len_plain + crypto_aead_xchacha20poly1305_ietf_ABYTES];
   unsigned char *mk[crypto_auth_hmacsha256_BYTES];
+  //unsigned char *mkbis[crypto_auth_hmacsha256_BYTES];
   unsigned char *nonce[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES];
+  //printf("mkbis inside CLIENT BEFORE mk (to verifiy mk modif): %u\n", mkbis);
+  //strcpy(mkbis, mk);
+  //printf("mkbis inside CLIENT BEFORE RECV (to verifiy mk modif): %u\n", mkbis);
+  printf("mk inside CLIENT BEFORE RECV: %u\n", mk);
+  printf("*mk inside CLIENT BEFORE RECV: %u\n", *mk);
+
   /*
   printf("yaaaaaaaaaaaaaaaaaas \n");
   int safeReturn = RatchetEncrypt(mk, key_CKr, mess, ciphertext, nonce);
@@ -183,41 +201,54 @@ int main(int argc, char *argv[]) {
   printf("yaaaaaaaaaaaaaaaaaas 22222222222222 \n");
   */
 
+  char *confirm; /* Buffer de reception */
+  confirm = (char*) malloc( MaxBuff );
+  n = recv(ServerSocket, confirm ,MaxBuff, NULL);
+  if( n  < 0 ) {
+    die( "Problem encountered Cannot receive message" );
+    printf( "Problem encountered Cannot receive message" );
+  } else {
+    printf("confirmation : %s \n", confirm);
+  }
+  n = recv(ServerSocket, confirm ,MaxBuff, NULL);
+  if( n  < 0 ) {
+    die( "Problem encountered Cannot receive message" );
+    printf( "Problem encountered Cannot receive message" );
+  } else {
+    printf("confirmation : %s \n", confirm);
+  }
   //char *mk;
   //mk = (char*) malloc( MaxBuff );
-  if (recv( ServerSocket, mk, MaxBuff, NULL) >= 0) {
+
+  if (recv( ServerSocket, mk, crypto_auth_hmacsha256_BYTES, NULL) >= 0) {
     printf("mk inside CLIENT: %u\n", mk);
     printf("*mk inside CLIENT: %u\n", *mk);
   }  else {
     printf("soucis in receiving mk \n");
   }
 
+
   //char *ciphertext;
   //ciphertext = (char*) malloc( MaxBuff );
-  if (recv( ServerSocket, ciphertext, MaxBuff, NULL) >= 0) {
+  if (recv( ServerSocket, ciphertext, len_plain + crypto_aead_xchacha20poly1305_ietf_ABYTES, NULL) >= 0) {
     printf("ciphertext inside CLIENT: %u\n", ciphertext);
     printf("*ciphertext inside CLIENT: %u\n", *ciphertext);
   }  else {
     printf("soucis in receiving ciphertext \n");
   }
-  /*
+
   //char *nonce;
   //nonce = (char*) malloc( MaxBuff );
-  if (recv( ServerSocket, nonce, MaxBuff, NULL) >= 0) {
+  if (recv( ServerSocket, nonce, crypto_aead_xchacha20poly1305_ietf_NPUBBYTES, NULL) >= 0) {
     printf("nonce inside CLIENT: %u\n", nonce);
-    printf("*nonce inside CLIENT: %u\n", *nonce);
+    //printf("*nonce inside CLIENT: %u\n", *nonce);
   }  else {
     printf("soucis in receiving nonce \n");
   }
-  */
+
 
   // Waiting
-  /*
-  unsigned char *key_CKr[crypto_auth_hmacsha256_KEYBYTES];
-  crypto_auth_hmacsha256_keygen(key_CKr);
-  */
-
-  //int safeReturn2 = ratchetDecrypt(mk, len_plain, ciphertext, nonce, key_CKr);
+  int safeReturn2 = ratchetDecrypt(mk, len_plain, ciphertext, nonce, key_CKr);
 
   printf("--------------------------------------- \n");
   printf("DEBUT TEST DISCUSION \n");
@@ -228,7 +259,7 @@ int main(int argc, char *argv[]) {
     // MESSAGE ENVOYE
 
     // IF WANT TO SEND
-
+/*
     char discussion[MaxBuff];
     printf("Entrez le message  :  ");
     fgets(discussion, MaxBuff, stdin);
@@ -246,8 +277,8 @@ int main(int argc, char *argv[]) {
       printf("%s \n", dataMess);
       n = -1;
     }
+*/
 
-    /*
     char discussion[MaxBuff];
     printf("Entrez le message  :  ");
     fgets(discussion, MaxBuff, stdin);
@@ -262,7 +293,7 @@ int main(int argc, char *argv[]) {
     }
     printf( "Received: " );
     printf("%s \n", dataMess);
-    */
+
   }
 
   // ---- FIN TEST MESSAGE ------------------

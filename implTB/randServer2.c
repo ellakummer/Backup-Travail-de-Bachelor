@@ -312,7 +312,7 @@ void exchange( int ClientSocket, const char *chemin) {
   printf("CKr inside SERVER BREFORE:%u\n", key_CKr);
 
   // MESSAGE TO ENCRYPT
-  const unsigned char* mess = (const unsigned char*) "test on y croit";
+  const unsigned char* mess = (const unsigned char*) "test go y croit";
   /*
   char mess_inter[MaxBuff];
   printf("Write the message to encrypt :  ");
@@ -322,13 +322,19 @@ void exchange( int ClientSocket, const char *chemin) {
 
 
   // ENCRYTPION
+  /*
   unsigned char *ciphertext[strlen((char*)mess) + crypto_aead_xchacha20poly1305_ietf_ABYTES];
   unsigned char *mk[crypto_auth_hmacsha256_BYTES];
   unsigned char *nonce[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES];
+  */
+  unsigned char ciphertext[strlen((char*)mess) + crypto_aead_xchacha20poly1305_ietf_ABYTES];
+  unsigned char mk[crypto_auth_hmacsha256_BYTES];
+  unsigned char nonce[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES];
   printf("*cipher inside SERVER BEFORE:%u\n", *ciphertext);
   printf("cipher inside SERVER BEFORE:%u\n", ciphertext);
   printf("------- \n");
-  int safeReturn = RatchetEncrypt(mk, key_CKs, mess, ciphertext, nonce);
+  int safeReturn = 0;
+  safeReturn = RatchetEncrypt(mk, key_CKs, mess, ciphertext, nonce);
   state_Ns += 1;
   //int safeReturn = RatchetEncrypt(mk, &ss_a_server, mess, ciphertext, nonce);
   printf("---- \n");
@@ -346,7 +352,7 @@ void exchange( int ClientSocket, const char *chemin) {
   // DECRYPTION
   unsigned long long len_plain = strlen((char*)mess);
   printf("Very Large Message : %lld \n", len_plain );
-  /*
+
   printf("TEST DECRYPT INSIDE SERVER: \n");
   unsigned char decrypted[strlen((char*)mess)];
   unsigned long long decrypted_len;
@@ -356,7 +362,7 @@ void exchange( int ClientSocket, const char *chemin) {
   } else {
     printf("cipher decrypted  : %s\n", decrypted);
   }
-  */
+
 
 
   printf("------------------------------ \n");
@@ -367,28 +373,68 @@ void exchange( int ClientSocket, const char *chemin) {
   printf("----------- ECHANGE ENCRYPTE ------------------- \n");
   // LE CLIENT A BESOIN DE : mk, len_plain, ciphertext, nonce
 
-  /*
-  char discussion[MaxBuff];
-  printf("Entrez le message  :  ");
-  fgets(discussion, MaxBuff, stdin);
-  */
+  char *confirm2; /* Buffer de reception */
+  confirm2 = (char*) malloc( MaxBuff );
+  n = recv(ClientSocket, confirm2 ,MaxBuff, NULL);
+  if( n  < 0 ) {
+    die( "Problem encountered Cannot receive message" );
+    printf( "Problem encountered Cannot receive message" );
+  } else {
+    printf("confirmation : %s \n", confirm2);
+  }
+
+
+/*
   printf("len_plain inside SERVER AFTER: %u\n", len_plain);
   send(ClientSocket,&len_plain,sizeof(len_plain), NULL);
+*/
+
+/*
+  char *confirm;
+  confirm = (char*) malloc( MaxBuff );
+  n = recv(ClientSocket, confirm ,MaxBuff, NULL);
+  if( n  < 0 ) {
+    die( "Problem encountered Cannot receive message" );
+  } else {
+    printf("confiramtion received by client : %s \n", confirm);
+  }
+*/
+
+  unsigned char confirm[MaxBuff] = "confirm";
+  printf("send : %s \n", confirm);
+  send(ClientSocket, &confirm, sizeof(confirm), NULL);
+  strcpy(confirm, "");
+  printf("send : %s \n", confirm);
+  send(ClientSocket, &confirm, sizeof(confirm), NULL);
 
   printf("mk inside SERVER AFTER: %u\n", mk);
   printf("*mk inside SERVER AFTER: %u\n", *mk);
-  send(ClientSocket,&mk,sizeof(mk), NULL);
+  //printf("size mk : %d\n", crypto_auth_hmacsha256_BYTES);
+  send(ClientSocket,mk,crypto_auth_hmacsha256_BYTES, NULL);
+  //send(ClientSocket,&(*mk),sizeof(mk), NULL);
+
 
   printf("ciphertext inside SERVER AFTER: %u\n", ciphertext);
   printf("*ciphertext inside SERVER AFTER: %u\n", *ciphertext);
+  send(ClientSocket, ciphertext, 15 + crypto_aead_xchacha20poly1305_ietf_ABYTES, NULL);
+  //send(ClientSocket,&(*ciphertext),sizeof(ciphertext), NULL);
 
-  send(ClientSocket,&ciphertext,sizeof(ciphertext), NULL);
-/*
+
   printf("nonce inside SERVER AFTER: %u\n", nonce);
   printf("*nonce inside SERVER AFTER: %u\n", *nonce);
-  /*
-  send(ClientSocket,&nonce,sizeof(nonce), NULL);
-  */
+  //send(ClientSocket,&(*nonce),sizeof(nonce), NULL);
+  send(ClientSocket, nonce,crypto_aead_xchacha20poly1305_ietf_NPUBBYTES, NULL);
+
+  printf(" $$$$$$$$$$$$ GO TESTS 2 \n");
+  // TESTS :
+  printf("mk : %u\n", mk);
+  //mk[0] = 3;
+  //printf("mk : %u\n", mk);
+  safeReturn = ratchetDecrypt(mk, len_plain, ciphertext, nonce, key_CKr);
+  printf(" $$$$$$$$$$$$ GO TESTS 2 \n");
+  printf("mk : %u\n", mk);
+  printf("ciphertext: %u\n", ciphertext);
+  printf("nonce : %u\n", nonce);
 
   printf("---------------------------------------\n");
 
@@ -407,7 +453,7 @@ void exchange( int ClientSocket, const char *chemin) {
       printf("non est pas vide \n");
     }
     */
-
+/*
     // IF WANT TO RECEIVE
     char *dataMess;
     dataMess = (char*) malloc( MaxBuff );
@@ -425,8 +471,8 @@ void exchange( int ClientSocket, const char *chemin) {
       send(ClientSocket,&discussion,sizeof(discussion), NULL);
       discussion[0] = '\0';
     }
+*/
 
-    /*
     // SEND - RECEIVE -SEND - RECEIVE - ...
 
     // MESSAGE RECU :
@@ -445,7 +491,7 @@ void exchange( int ClientSocket, const char *chemin) {
     printf("Entrez le message  :  ");
     fgets(discussion, MaxBuff, stdin);
     send(ClientSocket,&discussion,sizeof(discussion), NULL);
-    */
+
   }
 
   //fclose(fp);
