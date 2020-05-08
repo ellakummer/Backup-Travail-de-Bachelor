@@ -79,21 +79,23 @@ int DECRYPT(unsigned char *mk[crypto_auth_hmacsha256_BYTES], unsigned long long 
   //length_plaintext = ciphertext_len - crypto_aead_xchacha20poly1305_ietf_ABYTES;
 
   // decrypt (test for the moment):
-  printf("Very Large Message : %lld \n", length_plaintext );
+  printf("Very Large Message lenght_plaintext : %lld \n", length_plaintext );
   unsigned char decrypted[length_plaintext];
   unsigned long long decrypted_len;
   if (crypto_aead_xchacha20poly1305_ietf_decrypt(decrypted, &decrypted_len, NULL, ciphertext, ciphertext_len, ADDITIONAL_DATA, ADDITIONAL_DATA_LEN, nonce, mk) != 0) {
     printf("error decrypting ciphertext \n");
   } else {
     printf("cipher decrypted  : %s\n", decrypted);
-    printf("cipher decrypted  : %u\n", decrypted);
+    printf("cipher decrypted size  : %u\n", sizeof(decrypted));
+    printf("Very Large Message lenght_plaintext : %lld \n", decrypted_len );
   }
 
  	return 0;
 }
 
 //int ratchetDecrypt(unsigned long long len_plain, unsigned char ciphertext[len_plain + crypto_aead_xchacha20poly1305_ietf_ABYTES], unsigned char nonce[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES], unsigned char *CKr[crypto_auth_hmacsha256_KEYBYTES])
-int ratchetDecrypt(unsigned char mk[crypto_auth_hmacsha256_BYTES], unsigned long long length_plaintext, unsigned char ciphertext[length_plaintext + crypto_aead_xchacha20poly1305_ietf_ABYTES], unsigned char nonce[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES], unsigned char *CKr[crypto_auth_hmacsha256_KEYBYTES])
+//int ratchetDecrypt(unsigned char mk[crypto_auth_hmacsha256_BYTES], unsigned long long length_plaintext, unsigned char ciphertext[length_plaintext + crypto_aead_xchacha20poly1305_ietf_ABYTES], unsigned char nonce[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES], unsigned char *CKr[crypto_auth_hmacsha256_KEYBYTES])
+int ratchetDecrypt(unsigned long long length_plaintext, unsigned char ciphertext[length_plaintext + crypto_aead_xchacha20poly1305_ietf_ABYTES], unsigned char nonce[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES], unsigned char *CKr[crypto_auth_hmacsha256_KEYBYTES])
 {
   printf("!! INSIDE DECRYPT !! \n");
 
@@ -114,13 +116,10 @@ int ratchetDecrypt(unsigned char mk[crypto_auth_hmacsha256_BYTES], unsigned long
     state.RK, state.CKs = KDF_RK(state.RK, DH(state.DHs, state.DHr) : SABER )
 */
 
-  // IF WE DERIVE !!!!!!! (Ckr and not CKs)
-  unsigned char *mk_inter[crypto_auth_hmacsha256_BYTES];
-  KDF_CKr(mk_inter, CKr);
-  printf("mk BEFORE DECRYPT: %u\n", mk);
-  printf("*mk BEFORE DECRYPT: %u\n", *mk);
-  //printf("mk inter BEFORE DECRYPT: %u\n", mk_inter);
-  //printf("*mk inter BEFORE DECRYPT: %u\n", *mk_inter);
+  unsigned char *mk[crypto_auth_hmacsha256_BYTES];
+  KDF_CKr(mk, CKr);
+  //printf("mk inter BEFORE DECRYPT: %u\n", mk);
+  //printf("*mk inter BEFORE DECRYPT: %u\n", *mk);
 
   int safeReturn = DECRYPT(mk, length_plaintext, ciphertext, nonce);
   /*

@@ -313,7 +313,7 @@ void exchange( int ClientSocket, const char *chemin) {
 
   // MESSAGE TO ENCRYPT
   //const unsigned char* mess = (const unsigned char*) "teet go y croyt";
-  const unsigned char* mess = (const unsigned char*) "go go goooo";
+  const unsigned char* mess = (const unsigned char*) "affiches toi stp";
 
   /*
   char mess_inter[MaxBuff];
@@ -329,87 +329,49 @@ void exchange( int ClientSocket, const char *chemin) {
   unsigned char *mk[crypto_auth_hmacsha256_BYTES];
   unsigned char *nonce[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES];
   */
-  unsigned char ciphertext[strlen((char*)mess) + crypto_aead_xchacha20poly1305_ietf_ABYTES];
-  unsigned char mk[crypto_auth_hmacsha256_BYTES];
-  unsigned char nonce[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES];
-  printf("*cipher inside SERVER BEFORE:%u\n", *ciphertext);
-  printf("cipher inside SERVER BEFORE:%u\n", ciphertext);
+  unsigned char ciphertext_send[strlen((char*)mess) + crypto_aead_xchacha20poly1305_ietf_ABYTES];
+  unsigned char nonce_send[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES];
+  printf("*cipher inside SERVER BEFORE:%u\n", *ciphertext_send);
+  printf("cipher inside SERVER BEFORE:%u\n", ciphertext_send);
   printf("------- \n");
   int safeReturn = 0;
-  safeReturn = RatchetEncrypt(mk, key_CKs, mess, ciphertext, nonce);
+  //safeReturn = RatchetEncrypt(mk, key_CKs, mess, ciphertext, nonce);
   state_Ns += 1;
-  //int safeReturn = RatchetEncrypt(mk, &ss_a_server, mess, ciphertext, nonce);
-  //int safeReturn = RatchetEncrypt(mk, ss_a_server, mess, ciphertext, nonce);
+  //safeReturn = RatchetEncrypt(mk_send, ss_a_server, mess, ciphertext_send, nonce_send);
+  printf("SSA BEFORE ENCRYPT : %u \n", ss_a_server[1]);
+  safeReturn = RatchetEncrypt(ss_a_server, mess, ciphertext_send, nonce_send);
+  printf("SSA AFTER ENCRYPT : %u \n", ss_a_server[1]);
 
   printf("---- \n");
   printf("*CKs inside SERVER AFTER:%u\n", *key_CKs);
   printf("CKs inside SERVER AFTER:%u\n", key_CKs);
   printf("*CKr inside SERVER AFTER:%u\n", *key_CKr);
   printf("CKr inside SERVER AFTER:%u\n", key_CKr);
-  printf("*cipher inside SERVER AFTER:%u\n", *ciphertext);
-  printf("cipher inside SERVER  AFTER: %u\n", ciphertext);
-  printf("nonce inside SERVER AFTER: %u\n", nonce);
+  printf("*cipher inside SERVER AFTER:%u\n", *ciphertext_send);
+  printf("cipher inside SERVER  AFTER: %u\n", ciphertext_send);
+  printf("nonce inside SERVER AFTER: %u\n", nonce_send);
   //printf("*nonce inside SERVER AFTER: %u\n", *nonce);
-  printf("mk inside SERVER AFTER: %u\n", mk);
-  printf("*mk inside SERVER AFTER: %u\n", *mk);
 
   // DECRYPTION
   unsigned long long len_plain = strlen((char*)mess);
   printf("Very Large Message : %lld \n", len_plain );
-  //printf(" HERE CIPHERTEXT LEN SIZEOF = %d\n", sizeof(ciphertext));
-
-  printf("TEST DECRYPT INSIDE SERVER: \n");
-  unsigned char decrypted[strlen((char*)mess)];
-  unsigned long long decrypted_len;
-  unsigned long long ciphertext_len = strlen((char*)mess) + crypto_aead_xchacha20poly1305_ietf_ABYTES;
-  printf(" HERE CIPHERTEXT LEN SIZEOF = %d\n",ciphertext_len);
-  if (crypto_aead_xchacha20poly1305_ietf_decrypt(decrypted, &decrypted_len, NULL, ciphertext, ciphertext_len, ADDITIONAL_DATA, ADDITIONAL_DATA_LEN, nonce, mk) != 0) {
-    printf("error encrypting ciphertext \n");
-  } else {
-    printf("cipher decrypted  : %s\n", decrypted);
-  }
-
 
 
   printf("------------------------------ \n");
-  printf("----------- APPEL FONCTION RATCHET DECRYPT ------------------- \n");
-  safeReturn = ratchetDecrypt(mk, len_plain, ciphertext, nonce, key_CKr);
-
-  printf("------------------------------ \n");
-  printf("----------- ECHANGE ENCRYPTE ------------------- \n");
+  printf("----------- ECHANGE ENCRYPTE 1 ------------------- \n");
   // LE CLIENT A BESOIN DE : mk, len_plain, ciphertext, nonce
-  /*
-  unsigned char len_plain_char[MaxBuff] = "15";
-  unsigned char len_plain_char[MaxBuff];
-  strcpy(len_plain_char, "15");
-  printf("len_plain_char inside SERVER AFTER: %d\n", len_plain_char);
-  */
-  /*
-  send(ClientSocket,len_plain_char,MaxBuff, NULL);
-  */
 
-  //char *data_len = (char*)&len_plain;
-  //const unsigned char* len_plain2 = (const unsigned char*) "15";
-
-  //unsigned char len_plain2[MaxBuff];
-  //strcpy(len_plain2, "15");
-  /*
   unsigned char plaintext_length[1] = {len_plain};
   send(ClientSocket,&plaintext_length,sizeof(plaintext_length), NULL);
-  */
 
-  printf("mk inside SERVER AFTER: %u\n", mk);
-  printf("*mk inside SERVER AFTER: %u\n", *mk);
-  send(ClientSocket,mk,crypto_auth_hmacsha256_BYTES, NULL);
+  printf("ciphertext inside SERVER AFTER: %u\n", ciphertext_send);
+  printf("*ciphertext inside SERVER AFTER: %u\n", *ciphertext_send);
+  send(ClientSocket, ciphertext_send, len_plain + crypto_aead_xchacha20poly1305_ietf_ABYTES, NULL);
 
-  printf("ciphertext inside SERVER AFTER: %u\n", ciphertext);
-  printf("*ciphertext inside SERVER AFTER: %u\n", *ciphertext);
-  send(ClientSocket, ciphertext, len_plain + crypto_aead_xchacha20poly1305_ietf_ABYTES, NULL);
-
-  printf("nonce inside SERVER AFTER: %u\n", nonce);
-  printf("*nonce inside SERVER AFTER: %u\n", *nonce);
-  send(ClientSocket, nonce,crypto_aead_xchacha20poly1305_ietf_NPUBBYTES, NULL);
-
+  printf("nonce inside SERVER AFTER: %u\n", nonce_send);
+  printf("*nonce inside SERVER AFTER: %u\n", *nonce_send);
+  send(ClientSocket, nonce_send,crypto_aead_xchacha20poly1305_ietf_NPUBBYTES, NULL);
+/*
   printf(" $$$$$$$$$$$$ GO TESTS 2 \n");
   // TESTS :
   printf("mk : %u\n", mk);
@@ -420,6 +382,38 @@ void exchange( int ClientSocket, const char *chemin) {
   printf("mk : %u\n", mk);
   printf("ciphertext: %u\n", ciphertext);
   printf("nonce : %u\n", nonce);
+*/
+
+  printf("------------------------------ \n");
+  printf("----------- ECHANGE ENCRYPTE 2 ------------------- \n");
+
+  char *plaintext_length_recv;
+  plaintext_length_recv = (char*) malloc( 1 );
+  if (recv( ClientSocket, plaintext_length_recv, 1, NULL) >= 0){
+    printf( "Received: " );
+    printf("%d\n", plaintext_length_recv[0] & 0xff );
+  } else {
+    printf("soucis in receiving plaintext_length \n");
+  }
+  unsigned long long length_plaintext_recv = plaintext_length_recv[0];
+  unsigned char *ciphertext_recv[length_plaintext_recv + crypto_aead_xchacha20poly1305_ietf_ABYTES];
+  unsigned char *nonce_recv[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES];
+  if (recv( ClientSocket, ciphertext_recv, length_plaintext_recv + crypto_aead_xchacha20poly1305_ietf_ABYTES, NULL) >= 0) {
+    printf("ciphertext inside CLIENT: %u\n", ciphertext_recv);
+  }  else {
+    printf("soucis in receiving ciphertext \n");
+  }
+  if (recv( ClientSocket, nonce_recv, crypto_aead_xchacha20poly1305_ietf_NPUBBYTES, NULL) >= 0) {
+    printf("nonce inside CLIENT: %u\n", nonce_recv);
+  }  else {
+    printf("soucis in receiving nonce \n");
+  }
+
+  printf("SSA BEFORE DECRYPT : %u \n", ss_a_server[1]);
+  int safeReturn2 = ratchetDecrypt(length_plaintext_recv, ciphertext_recv, nonce_recv, ss_a_server);
+  printf("SSA AFTER DECRYPT : %u \n", ss_a_server[1]);
+
+
 
   printf("---------------------------------------\n");
 

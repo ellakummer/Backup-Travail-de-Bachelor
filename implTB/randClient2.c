@@ -156,52 +156,59 @@ int main(int argc, char *argv[]) {
   printf("------------------------------------- \n");
   printf("----------- ECHANGE ENCRYPT (ICI DECRYPT) ------------------- \n");
   // CLIENT NEEDS : mk, len_plain, ciphertext, nonce
-/*
-  char *plaintext_length;
-  plaintext_length = (char*) malloc( 1 );
-  if (recv( ServerSocket, plaintext_length, 1, NULL) >= 0){ // ICI CHANGE !! 12
+
+  char *plaintext_length_recv;
+  plaintext_length_recv = (char*) malloc( 1 );
+  if (recv( ServerSocket, plaintext_length_recv, 1, NULL) >= 0){
     printf( "Received: " );
-    printf("%d\n", plaintext_length[0] & 0xff );
+    printf("%d\n", plaintext_length_recv[0] & 0xff );
   } else {
     printf("soucis in receiving plaintext_length \n");
   }
-  unsigned long long length_plaintext = plaintext_length[0];
-*/
-  unsigned long long length_plaintext = 11;
-  unsigned char *ciphertext[length_plaintext + crypto_aead_xchacha20poly1305_ietf_ABYTES];
-  unsigned char *mk[crypto_auth_hmacsha256_BYTES];
-  unsigned char *nonce[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES];
+  unsigned long long length_plaintext_recv = plaintext_length_recv[0];
 
-  printf("mk inside CLIENT BEFORE RECV: %u\n", mk);
-  printf("*mk inside CLIENT BEFORE RECV: %u\n", *mk);
+  //unsigned long long length_plaintext = 11;
+  unsigned char *ciphertext_recv[length_plaintext_recv + crypto_aead_xchacha20poly1305_ietf_ABYTES];
+  unsigned char *nonce_recv[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES];
 
-  if (recv( ServerSocket, mk, crypto_auth_hmacsha256_BYTES, NULL) >= 0) {
-    printf("mk inside CLIENT: %u\n", mk);
-    printf("*mk inside CLIENT: %u\n", *mk);
-  }  else {
-    printf("soucis in receiving mk \n");
-  }
-
-  if (recv( ServerSocket, ciphertext, length_plaintext + crypto_aead_xchacha20poly1305_ietf_ABYTES, NULL) >= 0) {
-    printf("ciphertext inside CLIENT: %u\n", ciphertext);
-    printf("*ciphertext inside CLIENT: %u\n", *ciphertext);
+  if (recv( ServerSocket, ciphertext_recv, length_plaintext_recv + crypto_aead_xchacha20poly1305_ietf_ABYTES, NULL) >= 0) {
+    printf("ciphertext inside CLIENT: %u\n", ciphertext_recv);
+    printf("*ciphertext inside CLIENT: %u\n", *ciphertext_recv);
   }  else {
     printf("soucis in receiving ciphertext \n");
   }
 
-  if (recv( ServerSocket, nonce, crypto_aead_xchacha20poly1305_ietf_NPUBBYTES, NULL) >= 0) {
-    printf("nonce inside CLIENT: %u\n", nonce);
+  if (recv( ServerSocket, nonce_recv, crypto_aead_xchacha20poly1305_ietf_NPUBBYTES, NULL) >= 0) {
+    printf("nonce inside CLIENT: %u\n", nonce_recv);
     //printf("*nonce inside CLIENT: %u\n", *nonce);
   }  else {
     printf("soucis in receiving nonce \n");
   }
 
 
-  // Waiting
+  //int safeReturn2 = ratchetDecrypt(mk, length_plaintext, ciphertext, nonce, ss_a_client);
+  printf("SSA BEFORE DECRYPT : %u \n", ss_a_client[1]);
+  int safeReturn2 = ratchetDecrypt(length_plaintext_recv, ciphertext_recv, nonce_recv, ss_a_client);
+  printf("SSA AFTER DECRYPT : %u \n", ss_a_client[1]);
 
-  unsigned char *key_CKr[crypto_auth_hmacsha256_KEYBYTES];
-  crypto_auth_hmacsha256_keygen(key_CKr);
-  int safeReturn2 = ratchetDecrypt(mk, length_plaintext, ciphertext, nonce, key_CKr);
+  printf("------------------------------ \n");
+  printf("----------- ECHANGE ENCRYPTE 2 ------------------- \n");
+
+  const unsigned char* mess = (const unsigned char*) "affiches toi stp bis";
+  unsigned char ciphertext_send[strlen((char*)mess) + crypto_aead_xchacha20poly1305_ietf_ABYTES];
+  unsigned char nonce_send[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES];
+  printf("SSA BEFORE ENCRYPT : %u \n", ss_a_client[1]);
+  int safeReturn = RatchetEncrypt(ss_a_client, mess, ciphertext_send, nonce_send);
+  printf("SSA AFTER ENCRYPT : %u \n", ss_a_client[1]);
+
+  unsigned long long len_plain_send = strlen((char*)mess);
+  printf("L0ONGUER : %lld \n", len_plain_send );
+  unsigned char plaintext_length_send[1] = {len_plain_send};
+  send(ServerSocket,&plaintext_length_send,sizeof(plaintext_length_send), NULL);
+  send(ServerSocket, ciphertext_send, len_plain_send + crypto_aead_xchacha20poly1305_ietf_ABYTES, NULL);
+  send(ServerSocket, nonce_send,crypto_aead_xchacha20poly1305_ietf_NPUBBYTES, NULL);
+
+
 
   printf("--------------------------------------- \n");
   printf("DEBUT TEST DISCUSION \n");

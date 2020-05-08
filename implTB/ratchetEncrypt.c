@@ -131,20 +131,13 @@ int ENCRYPT(unsigned char mk[crypto_aead_xchacha20poly1305_ietf_KEYBYTES], unsig
  	return 0;
 }
 
-int RatchetEncrypt(unsigned char mk[crypto_auth_hmacsha256_BYTES], unsigned char CKs[crypto_auth_hmacsha256_KEYBYTES], unsigned char plaintext[MaxBuff], unsigned char ciphertext[strlen((char*)plaintext) + crypto_aead_xchacha20poly1305_ietf_ABYTES], unsigned char nonce[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES])
-//int RatchetEncrypt(unsigned char *mk[crypto_auth_hmacsha256_BYTES], unsigned char *CKs[crypto_auth_hmacsha256_KEYBYTES], unsigned char plaintext[MaxBuff], unsigned char *ciphertext[strlen((char*)plaintext) + crypto_aead_xchacha20poly1305_ietf_ABYTES], unsigned char *nonce[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES])
+//int RatchetEncrypt(unsigned char mk[crypto_auth_hmacsha256_BYTES], unsigned char CKs[crypto_auth_hmacsha256_KEYBYTES], unsigned char plaintext[MaxBuff], unsigned char ciphertext[strlen((char*)plaintext) + crypto_aead_xchacha20poly1305_ietf_ABYTES], unsigned char nonce[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES])
+int RatchetEncrypt(unsigned char CKs[crypto_auth_hmacsha256_KEYBYTES], unsigned char plaintext[MaxBuff], unsigned char ciphertext[strlen((char*)plaintext) + crypto_aead_xchacha20poly1305_ietf_ABYTES], unsigned char nonce[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES])
 {
   if (sodium_init() < 0) {
         printf("libsodium not instancied.. \n");
   }
-  /*
-  // test well received :
-  int i;
-  printf("CKs : \n");
-  for(i=0; i<32; i++){
-    printf("%u \t ", CKs[i]);
-  }
-  */
+
   printf("test mess RECEIVED TO ENCRYPT :%s\n", plaintext);
   printf("test mess RECEIVED CIPHERTEXT :%u\n", ciphertext);
   printf("test mess RECEIVED *CIPHERTEXT :%u\n", *ciphertext);
@@ -155,11 +148,11 @@ int RatchetEncrypt(unsigned char mk[crypto_auth_hmacsha256_BYTES], unsigned char
   unsigned char nonce_inter[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES];
   unsigned char ciphertext_inter[strlen((char*)plaintext) + crypto_aead_xchacha20poly1305_ietf_ABYTES];
   */
-  unsigned char CKs_inter[crypto_auth_hmacsha256_KEYBYTES];
+  //unsigned char CKs_inter[crypto_auth_hmacsha256_KEYBYTES];
 
-
+  unsigned char mk[crypto_auth_hmacsha256_BYTES];
   KDF_CK(mk, CKs);
-  printf("test  returnKDF.CKs inside ratchetEncrypt : %u\n", CKs_inter);
+  //printf("test  returnKDF.CKs inside ratchetEncrypt : %u\n", CKs_inter);
   printf("test changed returnKDF Cks inside ratchetEncrypt : %u\n", CKs);
   printf("test changed returnKDF mk inside ratchetEncrypt : %u\n", mk);
 
