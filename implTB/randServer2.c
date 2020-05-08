@@ -312,7 +312,9 @@ void exchange( int ClientSocket, const char *chemin) {
   printf("CKr inside SERVER BREFORE:%u\n", key_CKr);
 
   // MESSAGE TO ENCRYPT
-  const unsigned char* mess = (const unsigned char*) "teet go y croyt";
+  //const unsigned char* mess = (const unsigned char*) "teet go y croyt";
+  const unsigned char* mess = (const unsigned char*) "go go goooo";
+
   /*
   char mess_inter[MaxBuff];
   printf("Write the message to encrypt :  ");
@@ -354,11 +356,13 @@ void exchange( int ClientSocket, const char *chemin) {
   // DECRYPTION
   unsigned long long len_plain = strlen((char*)mess);
   printf("Very Large Message : %lld \n", len_plain );
+  //printf(" HERE CIPHERTEXT LEN SIZEOF = %d\n", sizeof(ciphertext));
 
   printf("TEST DECRYPT INSIDE SERVER: \n");
   unsigned char decrypted[strlen((char*)mess)];
   unsigned long long decrypted_len;
   unsigned long long ciphertext_len = strlen((char*)mess) + crypto_aead_xchacha20poly1305_ietf_ABYTES;
+  printf(" HERE CIPHERTEXT LEN SIZEOF = %d\n",ciphertext_len);
   if (crypto_aead_xchacha20poly1305_ietf_decrypt(decrypted, &decrypted_len, NULL, ciphertext, ciphertext_len, ADDITIONAL_DATA, ADDITIONAL_DATA_LEN, nonce, mk) != 0) {
     printf("error encrypting ciphertext \n");
   } else {
@@ -383,8 +387,16 @@ void exchange( int ClientSocket, const char *chemin) {
   /*
   send(ClientSocket,len_plain_char,MaxBuff, NULL);
   */
-  printf("len_plain inside SERVER AFTER: %u\n", len_plain);
-  send(ClientSocket,len_plain,MaxBuff, NULL);
+
+  //char *data_len = (char*)&len_plain;
+  //const unsigned char* len_plain2 = (const unsigned char*) "15";
+
+  //unsigned char len_plain2[MaxBuff];
+  //strcpy(len_plain2, "15");
+  /*
+  unsigned char plaintext_length[1] = {len_plain};
+  send(ClientSocket,&plaintext_length,sizeof(plaintext_length), NULL);
+  */
 
   printf("mk inside SERVER AFTER: %u\n", mk);
   printf("*mk inside SERVER AFTER: %u\n", *mk);
@@ -392,7 +404,7 @@ void exchange( int ClientSocket, const char *chemin) {
 
   printf("ciphertext inside SERVER AFTER: %u\n", ciphertext);
   printf("*ciphertext inside SERVER AFTER: %u\n", *ciphertext);
-  send(ClientSocket, ciphertext, 15 + crypto_aead_xchacha20poly1305_ietf_ABYTES, NULL);
+  send(ClientSocket, ciphertext, len_plain + crypto_aead_xchacha20poly1305_ietf_ABYTES, NULL);
 
   printf("nonce inside SERVER AFTER: %u\n", nonce);
   printf("*nonce inside SERVER AFTER: %u\n", *nonce);

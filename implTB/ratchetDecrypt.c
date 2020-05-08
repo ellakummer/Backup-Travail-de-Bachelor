@@ -61,7 +61,7 @@ https://github.com/jedisct1/libsodium/blob/master/src/libsodium/include/sodium/c
 //DECRYPT(mk, ciphertext, CONCAT(AD, header))
 // https://libsodium.gitbook.io/doc/secret-key_cryptography/aead/chacha20-poly1305/xchacha20-poly1305_construction
 
-int DECRYPT(unsigned char *mk[crypto_auth_hmacsha256_BYTES], unsigned long long len_plain, unsigned char ciphertext[len_plain + crypto_aead_xchacha20poly1305_ietf_ABYTES], unsigned char nonce[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES])
+int DECRYPT(unsigned char *mk[crypto_auth_hmacsha256_BYTES], unsigned long long length_plaintext, unsigned char ciphertext[length_plaintext + crypto_aead_xchacha20poly1305_ietf_ABYTES], unsigned char nonce[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES])
 {
   printf("cipher inside Decrypt  : %u\n", ciphertext);
   printf("nonce inside Decrypt : %u\n", nonce);
@@ -70,22 +70,30 @@ int DECRYPT(unsigned char *mk[crypto_auth_hmacsha256_BYTES], unsigned long long 
   printf("*nonce inside Decrypt : %u\n", *nonce);
   printf("*mk inside Decrypt : %u\n", *mk);
 
-  unsigned long long ciphertext_len = len_plain + crypto_aead_xchacha20poly1305_ietf_ABYTES;
+  unsigned long long ciphertext_len = length_plaintext + crypto_aead_xchacha20poly1305_ietf_ABYTES;
+  //unsigned long long ciphertext_len = sizeof(ciphertext);
+
+  //printf(" HERE crypto_aead_xchacha20poly1305_ietf_ABYTES LEN = %d\n", crypto_aead_xchacha20poly1305_ietf_ABYTES);
+  //printf(" HERE CIPHERTEXT LEN = %d\n", ciphertext_len);
+  //printf(" HERE CIPHERTEXT LEN SIZEOF = %d\n", sizeof(ciphertext));
+  //length_plaintext = ciphertext_len - crypto_aead_xchacha20poly1305_ietf_ABYTES;
+
   // decrypt (test for the moment):
-  printf("Very Large Message : %lld \n", len_plain );
-  unsigned char decrypted[len_plain];
+  printf("Very Large Message : %lld \n", length_plaintext );
+  unsigned char decrypted[length_plaintext];
   unsigned long long decrypted_len;
   if (crypto_aead_xchacha20poly1305_ietf_decrypt(decrypted, &decrypted_len, NULL, ciphertext, ciphertext_len, ADDITIONAL_DATA, ADDITIONAL_DATA_LEN, nonce, mk) != 0) {
     printf("error decrypting ciphertext \n");
   } else {
     printf("cipher decrypted  : %s\n", decrypted);
+    printf("cipher decrypted  : %u\n", decrypted);
   }
 
  	return 0;
 }
 
 //int ratchetDecrypt(unsigned long long len_plain, unsigned char ciphertext[len_plain + crypto_aead_xchacha20poly1305_ietf_ABYTES], unsigned char nonce[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES], unsigned char *CKr[crypto_auth_hmacsha256_KEYBYTES])
-int ratchetDecrypt(unsigned char mk[crypto_auth_hmacsha256_BYTES], unsigned long long len_plain, unsigned char ciphertext[len_plain + crypto_aead_xchacha20poly1305_ietf_ABYTES], unsigned char nonce[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES], unsigned char *CKr[crypto_auth_hmacsha256_KEYBYTES])
+int ratchetDecrypt(unsigned char mk[crypto_auth_hmacsha256_BYTES], unsigned long long length_plaintext, unsigned char ciphertext[length_plaintext + crypto_aead_xchacha20poly1305_ietf_ABYTES], unsigned char nonce[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES], unsigned char *CKr[crypto_auth_hmacsha256_KEYBYTES])
 {
   printf("!! INSIDE DECRYPT !! \n");
 
@@ -114,7 +122,7 @@ int ratchetDecrypt(unsigned char mk[crypto_auth_hmacsha256_BYTES], unsigned long
   //printf("mk inter BEFORE DECRYPT: %u\n", mk_inter);
   //printf("*mk inter BEFORE DECRYPT: %u\n", *mk_inter);
 
-  int safeReturn = DECRYPT(mk, len_plain, ciphertext, nonce);
+  int safeReturn = DECRYPT(mk, length_plaintext, ciphertext, nonce);
   /*
   return header, ENCRYPT(mk, plaintext, CONCAT(AD, header))
   return DECRYPT(mk, ciphertext, CONCAT(AD, header))

@@ -155,27 +155,20 @@ int main(int argc, char *argv[]) {
 
   printf("------------------------------------- \n");
   printf("----------- ECHANGE ENCRYPT (ICI DECRYPT) ------------------- \n");
-  // LE CLIENT A BESOIN DE : mk, len_plain, ciphertext, nonce
-  /*
-  unsigned char *len_char[MaxBuff];
-  if (recv( ServerSocket, len_char, crypto_auth_hmacsha256_BYTES, NULL) >= 0) {
-    printf("len_plain inside CLIENT: %u\n", len_char);
-    //printf("*len_plain inside CLIENT: %u\n", *len_plain);
-  }  else {
-    printf("soucis in receiving len_char \n");
+  // CLIENT NEEDS : mk, len_plain, ciphertext, nonce
+/*
+  char *plaintext_length;
+  plaintext_length = (char*) malloc( 1 );
+  if (recv( ServerSocket, plaintext_length, 1, NULL) >= 0){ // ICI CHANGE !! 12
+    printf( "Received: " );
+    printf("%d\n", plaintext_length[0] & 0xff );
+  } else {
+    printf("soucis in receiving plaintext_length \n");
   }
-  */
-  unsigned long long *len_plain2;
-
-  if (recv( ServerSocket, len_plain2, crypto_auth_hmacsha256_BYTES, NULL) >= 0) {
-    printf("len_plain inside CLIENT: %u\n", len_plain2);
-    //printf("*len_plain inside CLIENT: %u\n", *len_plain);
-  }  else {
-    printf("soucis in receiving len_plain2 \n");
-  }
-
-  unsigned long long len_plain = 15;
-  unsigned char *ciphertext[len_plain + crypto_aead_xchacha20poly1305_ietf_ABYTES];
+  unsigned long long length_plaintext = plaintext_length[0];
+*/
+  unsigned long long length_plaintext = 11;
+  unsigned char *ciphertext[length_plaintext + crypto_aead_xchacha20poly1305_ietf_ABYTES];
   unsigned char *mk[crypto_auth_hmacsha256_BYTES];
   unsigned char *nonce[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES];
 
@@ -189,7 +182,7 @@ int main(int argc, char *argv[]) {
     printf("soucis in receiving mk \n");
   }
 
-  if (recv( ServerSocket, ciphertext, len_plain + crypto_aead_xchacha20poly1305_ietf_ABYTES, NULL) >= 0) {
+  if (recv( ServerSocket, ciphertext, length_plaintext + crypto_aead_xchacha20poly1305_ietf_ABYTES, NULL) >= 0) {
     printf("ciphertext inside CLIENT: %u\n", ciphertext);
     printf("*ciphertext inside CLIENT: %u\n", *ciphertext);
   }  else {
@@ -208,7 +201,7 @@ int main(int argc, char *argv[]) {
 
   unsigned char *key_CKr[crypto_auth_hmacsha256_KEYBYTES];
   crypto_auth_hmacsha256_keygen(key_CKr);
-  int safeReturn2 = ratchetDecrypt(mk, len_plain, ciphertext, nonce, key_CKr);
+  int safeReturn2 = ratchetDecrypt(mk, length_plaintext, ciphertext, nonce, key_CKr);
 
   printf("--------------------------------------- \n");
   printf("DEBUT TEST DISCUSION \n");
