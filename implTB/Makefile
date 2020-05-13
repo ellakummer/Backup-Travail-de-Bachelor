@@ -45,11 +45,11 @@ test:
 common.o: common.c common.h
 	$(CC) $(CFLAGS4) -c -o common.o common.c
 
-randClient2: common.c dh.c ratchetEncrypt.c ratchetDecrypt.c $(SOURCES) common.h dh.h ratchetEncrypt.h ratchetDecrypt.h $(HEADERS) randClient2.c
-	$(CC) $(CFLAGS4) -o $@ common.c dh.c ratchetEncrypt.c ratchetDecrypt.c $(SOURCES) randClient2.c -lcrypto -lsodium
+randClient2: common.c dh.c ratchetEncrypt.c ratchetDecrypt.c KDF_RK.c $(SOURCES) common.h dh.h ratchetEncrypt.h ratchetDecrypt.h KDF_RK.h $(HEADERS) randClient2.c
+	$(CC) $(CFLAGS4) -o $@ common.c dh.c ratchetEncrypt.c ratchetDecrypt.c KDF_RK.c $(SOURCES) randClient2.c -lcrypto -lsodium
 
-randServer2: common.c dh.c ratchetEncrypt.c ratchetDecrypt.c $(SOURCES) common.h dh.h ratchetEncrypt.h ratchetDecrypt.h $(HEADERS) randServer2.c
-	$(CC) $(CFLAGS4) -o $@ common.c dh.c ratchetEncrypt.c ratchetDecrypt.c $(SOURCES) randServer2.c -lcrypto -lsodium
+randServer2: common.c dh.c ratchetEncrypt.c ratchetDecrypt.c KDF_RK.c $(SOURCES) common.h dh.h ratchetEncrypt.h ratchetDecrypt.h KDF_RK.h $(HEADERS) randServer2.c
+	$(CC) $(CFLAGS4) -o $@ common.c dh.c ratchetEncrypt.c ratchetDecrypt.c KDF_RK.c $(SOURCES) randServer2.c -lcrypto -lsodium
 
 ratchettest: common.c $(SOURCES) common.h $(HEADERS) ratchettest.c
 	$(CC) $(CFLAGS4) -o $@ common.c $(SOURCES) ratchettest.c -lcrypto

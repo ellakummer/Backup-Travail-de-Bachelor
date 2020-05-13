@@ -253,7 +253,49 @@ int main(int argc, char *argv[]) {
   printf("crypto_box_SECRETKEYBYTES SK : %d\n", crypto_box_SECRETKEYBYTES);
 
   // DH RATCHET STEP
+  unsigned char scalarmult_q_by_client[crypto_scalarmult_BYTES]; //
+  unsigned char scalarmult_q_by_server[crypto_scalarmult_BYTES]; // 2
+  unsigned char sharedkey_by_client[crypto_generichash_BYTES];
+  unsigned char sharedkey_by_server[crypto_generichash_BYTES];
+  crypto_generichash_state h;
 
+  /* The client derives a shared key from its secret key and the server's public key */
+  /* shared key = h(q ‖ client_publickey ‖ server_publickey) */
+  if (crypto_scalarmult(scalarmult_q_by_client, x25519_sk, x25519_pk2) != 0) {
+      printf("error deriving the shared secret key using DH, client's side");
+  }
+  crypto_generichash_init(&h, NULL, 0U, sizeof sharedkey_by_client);
+  crypto_generichash_update(&h, scalarmult_q_by_client, sizeof scalarmult_q_by_client);
+  crypto_generichash_update(&h, x25519_pk, sizeof x25519_pk);
+  crypto_generichash_update(&h, x25519_pk2, sizeof x25519_pk2);
+  crypto_generichash_final(&h, sharedkey_by_client, sizeof sharedkey_by_client);
+
+  /* The server derives a shared key from its secret key and the client's public key */
+  /* shared key = h(q ‖ client_publickey ‖ server_publickey) */
+  if (crypto_scalarmult(scalarmult_q_by_server, x25519_sk2, x25519_pk) != 0) {
+      printf("error deriving the shared secret key using DH, server's side");
+  }
+  crypto_generichash_init(&h, NULL, 0U, sizeof sharedkey_by_server);
+  crypto_generichash_update(&h, scalarmult_q_by_server, sizeof scalarmult_q_by_server);
+  crypto_generichash_update(&h, x25519_pk, sizeof x25519_pk);
+  crypto_generichash_update(&h, x25519_pk2, sizeof x25519_pk2);
+  crypto_generichash_final(&h, sharedkey_by_server, sizeof sharedkey_by_server);
+
+  /* sharedkey_by_client and sharedkey_by_server are identical :  */
+  printf("sharedkey_by_server : %d\n", *sharedkey_by_server);
+  printf("sharedkey_by_client : %d\n", *sharedkey_by_client);
+
+  // TESTS :
+  uint8_t CKr[CRYPTO_BYTES];
+  printf("SSA BEFORE KDF : %u \n", ss_a_client[1]); // ROOT KEY 
+  printf("Ckr BEFORE KDF  : %u\n", *CKr);
+  printf("sharedkey_by_server BEFORE KDF  : %u\n", sharedkey_by_server);
+  printf("*sharedkey_by_server BEFORE KDF  : %u\n", *sharedkey_by_server);
+  KDF_RK(ss_a_client, CKr, sharedkey_by_server);
+  printf("SSA AFTER KDF : %u \n", ss_a_client[1]);
+  printf("CKr AFTER KDF: %u\n", *CKr);
+  printf("sharedkey_by_server AFTER KDF: %u\n", sharedkey_by_server);
+  printf("*sharedkey_by_server AFTER KDF: %u\n", *sharedkey_by_server);
 
   printf("--------------------------------------- \n");
   printf("DEBUT TEST DISCUSION \n");

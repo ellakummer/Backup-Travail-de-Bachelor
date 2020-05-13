@@ -41,7 +41,7 @@ output of applying a KDF keyed by a 32-byte chain key ck to some constant.
   https://libsodium.gitbook.io/doc/advanced/hmac-sha2
 
 */
-int KDF_CK(unsigned char *mk[crypto_auth_hmacsha256_BYTES], unsigned char *CKs[crypto_auth_hmacsha256_KEYBYTES])
+int KDF_CKs(unsigned char *mk[crypto_auth_hmacsha256_BYTES], unsigned char *CKs[crypto_auth_hmacsha256_KEYBYTES])
 {
   printf("-- START LIBSODIUM USE2 --  \n");
 
@@ -151,7 +151,7 @@ int RatchetEncrypt(unsigned char CKs[crypto_auth_hmacsha256_KEYBYTES], unsigned 
   //unsigned char CKs_inter[crypto_auth_hmacsha256_KEYBYTES];
 
   unsigned char mk[crypto_auth_hmacsha256_BYTES];
-  KDF_CK(mk, CKs);
+  KDF_CKs(mk, CKs);
   //printf("test  returnKDF.CKs inside ratchetEncrypt : %u\n", CKs_inter);
   printf("test changed returnKDF Cks inside ratchetEncrypt : %u\n", CKs);
   printf("test changed returnKDF mk inside ratchetEncrypt : %u\n", mk);

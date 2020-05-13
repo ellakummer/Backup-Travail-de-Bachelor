@@ -33,7 +33,7 @@ with SHA-256 or SHA-512 [8], using rk as HKDF salt, dh_out as HKDF input key mat
 and an application-specific byte sequence as HKDF info.
 The info value should be chosen to be distinct from other uses of HKDF in the application.
 */
-
+/*
 int KDF_RK(unsigned char *RK[crypto_auth_hmacsha256_BYTES], unsigned char *CKr[crypto_auth_hmacsha256_KEYBYTES])
 {
   printf("-- START KDF_RK --  \n");
@@ -52,7 +52,7 @@ int KDF_RK(unsigned char *RK[crypto_auth_hmacsha256_BYTES], unsigned char *CKr[c
 
  	return 0;
 }
-
+*/
 /*
 https://github.com/jedisct1/libsodium/blob/master/src/libsodium/include/sodium/crypto_kdf_hkdf_sha512.h
 https://github.com/jedisct1/libsodium/blob/master/src/libsodium/include/sodium/crypto_kdf_hkdf_sha256.h
