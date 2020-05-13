@@ -82,6 +82,7 @@ int DECRYPT(unsigned char *mk[crypto_auth_hmacsha256_BYTES], unsigned long long 
   printf("Very Large Message lenght_plaintext : %lld \n", length_plaintext );
   unsigned char decrypted[length_plaintext];
   unsigned long long decrypted_len;
+  //if (crypto_aead_xchacha20poly1305_ietf_decrypt(decrypted, &decrypted_len, NULL, ciphertext, ciphertext_len, ADDITIONAL_DATA, ADDITIONAL_DATA_LEN, nonce, mk) != 0) {
   if (crypto_aead_xchacha20poly1305_ietf_decrypt(decrypted, &decrypted_len, NULL, ciphertext, ciphertext_len, ADDITIONAL_DATA, ADDITIONAL_DATA_LEN, nonce, mk) != 0) {
     printf("error decrypting ciphertext \n");
   } else {
@@ -95,26 +96,13 @@ int DECRYPT(unsigned char *mk[crypto_auth_hmacsha256_BYTES], unsigned long long 
 
 //int ratchetDecrypt(unsigned long long len_plain, unsigned char ciphertext[len_plain + crypto_aead_xchacha20poly1305_ietf_ABYTES], unsigned char nonce[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES], unsigned char *CKr[crypto_auth_hmacsha256_KEYBYTES])
 //int ratchetDecrypt(unsigned char mk[crypto_auth_hmacsha256_BYTES], unsigned long long length_plaintext, unsigned char ciphertext[length_plaintext + crypto_aead_xchacha20poly1305_ietf_ABYTES], unsigned char nonce[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES], unsigned char *CKr[crypto_auth_hmacsha256_KEYBYTES])
-int ratchetDecrypt(unsigned long long length_plaintext, unsigned char ciphertext[length_plaintext + crypto_aead_xchacha20poly1305_ietf_ABYTES], unsigned char nonce[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES], unsigned char *CKr[crypto_auth_hmacsha256_KEYBYTES])
+int ratchetDecrypt(unsigned long long length_plaintext, unsigned char ciphertext[length_plaintext + crypto_aead_xchacha20poly1305_ietf_ABYTES], unsigned char nonce[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES], unsigned char *CKr[crypto_auth_hmacsha256_KEYBYTES], int *state_Ns)
 {
   printf("!! INSIDE DECRYPT !! \n");
 
   if (sodium_init() < 0) {
         printf("libsodium not instancied.. \n");
   }
-/*
-  // PYTHON :
-  state.CKr, mk = KDF_CK(state.CKr)
-
-  def DHRatchet(state, header):
-    state.PN = state.Ns
-    state.Ns = 0
-    state.Nr = 0
-    state.DHr = header.dh
-    state.RK, state.CKr = KDF_RK(state.RK, DH(state.DHs, state.DHr) : SABER)
-    state.DHs = GENERATE_DH()
-    state.RK, state.CKs = KDF_RK(state.RK, DH(state.DHs, state.DHr) : SABER )
-*/
 
   unsigned char *mk[crypto_auth_hmacsha256_BYTES];
   KDF_CKr(mk, CKr);
@@ -126,6 +114,8 @@ int ratchetDecrypt(unsigned long long length_plaintext, unsigned char ciphertext
   return header, ENCRYPT(mk, plaintext, CONCAT(AD, header))
   return DECRYPT(mk, ciphertext, CONCAT(AD, header))
   */
+
+  *state_Ns += 1;
 
   return 0;
 }

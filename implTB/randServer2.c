@@ -291,8 +291,6 @@ void exchange( int ClientSocket, const char *chemin) {
   printf("---------------------------------------\n");
   printf("DEBUT TEST RATCHET ENCRYPT \n");
 
-  int state_Ns = 0;
-
   printf("tests LENGTHS (check same size : perfect): \n");
   printf("libsodium : crypto_auth_hmacsha256_BYTES for kdf: %d\n", crypto_auth_hmacsha256_BYTES);
   printf("libsodium : crypto_auth_hmacsha256_KEYBYTES for kdf: %d\n", crypto_auth_hmacsha256_KEYBYTES);
@@ -313,7 +311,7 @@ void exchange( int ClientSocket, const char *chemin) {
 
   // MESSAGE TO ENCRYPT
   //const unsigned char* mess = (const unsigned char*) "teet go y croyt";
-  const unsigned char* mess = (const unsigned char*) "affiches toi stp";
+  const unsigned char* mess = (const unsigned char*) "affiches toi stp <3";
 
   /*
   char mess_inter[MaxBuff];
@@ -329,6 +327,7 @@ void exchange( int ClientSocket, const char *chemin) {
   unsigned char *mk[crypto_auth_hmacsha256_BYTES];
   unsigned char *nonce[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES];
   */
+  int state_Ns = 0;
   unsigned char ciphertext_send[strlen((char*)mess) + crypto_aead_xchacha20poly1305_ietf_ABYTES];
   unsigned char nonce_send[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES];
   printf("*cipher inside SERVER BEFORE:%u\n", *ciphertext_send);
@@ -336,10 +335,11 @@ void exchange( int ClientSocket, const char *chemin) {
   printf("------- \n");
   int safeReturn = 0;
   //safeReturn = RatchetEncrypt(mk, key_CKs, mess, ciphertext, nonce);
-  state_Ns += 1;
   //safeReturn = RatchetEncrypt(mk_send, ss_a_server, mess, ciphertext_send, nonce_send);
   printf("SSA BEFORE ENCRYPT : %u \n", ss_a_server[1]);
-  safeReturn = RatchetEncrypt(ss_a_server, mess, ciphertext_send, nonce_send);
+  printf("STATE_NS before encrypt : %d\n", state_Ns);
+  safeReturn = RatchetEncrypt(ss_a_server, mess, ciphertext_send, nonce_send, &state_Ns);
+  printf("STATE_NS after encrypt : %d\n", state_Ns);
   printf("SSA AFTER ENCRYPT : %u \n", ss_a_server[1]);
 
   printf("---- \n");
@@ -410,7 +410,8 @@ void exchange( int ClientSocket, const char *chemin) {
   }
 
   printf("SSA BEFORE DECRYPT : %u \n", ss_a_server[1]);
-  int safeReturn2 = ratchetDecrypt(length_plaintext_recv, ciphertext_recv, nonce_recv, ss_a_server);
+  int safeReturn2 = ratchetDecrypt(length_plaintext_recv, ciphertext_recv, nonce_recv, ss_a_server, &state_Ns);
+  printf("STATE_NS after decrypt : %d\n", state_Ns);
   printf("SSA AFTER DECRYPT : %u \n", ss_a_server[1]);
 
 

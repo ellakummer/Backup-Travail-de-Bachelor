@@ -121,7 +121,7 @@ int main(int argc, char *argv[]) {
 
   // ------- ENCAPS
 
-  printf("CLIENT ENCODE MESSAGE \n");
+  printf("CLIENT ENCODE SSK \n");
   // received pk, so create its own pair pk, sk and will use to encode
   //Key-Encapsulation call; input: pk; output: ciphertext c, shared-secret ss_a;
   crypto_kem_enc(ct, ss_a_client, server_pk);
@@ -156,6 +156,7 @@ int main(int argc, char *argv[]) {
   printf("------------------------------------- \n");
   printf("----------- ECHANGE ENCRYPT (ICI DECRYPT) ------------------- \n");
   // CLIENT NEEDS : mk, len_plain, ciphertext, nonce
+  int state_Ns = 0;
 
   char *plaintext_length_recv;
   plaintext_length_recv = (char*) malloc( 1 );
@@ -188,7 +189,9 @@ int main(int argc, char *argv[]) {
 
   //int safeReturn2 = ratchetDecrypt(mk, length_plaintext, ciphertext, nonce, ss_a_client);
   printf("SSA BEFORE DECRYPT : %u \n", ss_a_client[1]);
-  int safeReturn2 = ratchetDecrypt(length_plaintext_recv, ciphertext_recv, nonce_recv, ss_a_client);
+  printf("STATE_NS before decrypt : %d\n", state_Ns);
+  int safeReturn2 = ratchetDecrypt(length_plaintext_recv, ciphertext_recv, nonce_recv, ss_a_client, &state_Ns);
+  printf("STATE_NS after decrypt : %d\n", state_Ns);
   printf("SSA AFTER DECRYPT : %u \n", ss_a_client[1]);
 
   printf("------------------------------ \n");
@@ -198,7 +201,8 @@ int main(int argc, char *argv[]) {
   unsigned char ciphertext_send[strlen((char*)mess) + crypto_aead_xchacha20poly1305_ietf_ABYTES];
   unsigned char nonce_send[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES];
   printf("SSA BEFORE ENCRYPT : %u \n", ss_a_client[1]);
-  int safeReturn = RatchetEncrypt(ss_a_client, mess, ciphertext_send, nonce_send);
+  int safeReturn = RatchetEncrypt(ss_a_client, mess, ciphertext_send, nonce_send, &state_Ns);
+  printf("STATE_NS after encrypt : %d\n", state_Ns);
   printf("SSA AFTER ENCRYPT : %u \n", ss_a_client[1]);
 
   unsigned long long len_plain_send = strlen((char*)mess);
@@ -208,6 +212,47 @@ int main(int argc, char *argv[]) {
   send(ServerSocket, ciphertext_send, len_plain_send + crypto_aead_xchacha20poly1305_ietf_ABYTES, NULL);
   send(ServerSocket, nonce_send,crypto_aead_xchacha20poly1305_ietf_NPUBBYTES, NULL);
 
+  // TESTS REPLACE
+  /*
+  const unsigned char ad[5];
+  sprintf(ad, "%d", state_Ns);
+  printf("itoa result : %s\n", ad);
+
+  size_t s = strlen((const char) ad);
+  */
+  //printf("length s = %llu\n", s);
+
+  printf("---------------- TEST GENERATE DH KEYPAIR + DH RATCHET STEP ----------------------- \n");
+  // https://libsodium.gitbook.io/doc/advanced/ed25519-curve25519
+
+  // PAIR 1
+  unsigned char ed25519_pk[crypto_sign_ed25519_PUBLICKEYBYTES];
+  unsigned char ed25519_skpk[crypto_sign_ed25519_SECRETKEYBYTES];
+  unsigned char x25519_pk[crypto_scalarmult_curve25519_BYTES];
+  unsigned char x25519_sk[crypto_scalarmult_curve25519_BYTES];
+
+  crypto_sign_ed25519_keypair(ed25519_pk, ed25519_skpk);
+
+  crypto_sign_ed25519_pk_to_curve25519(x25519_pk, ed25519_pk);
+  crypto_sign_ed25519_sk_to_curve25519(x25519_sk, ed25519_skpk);
+
+  // PAIR 2
+  unsigned char ed25519_pk2[crypto_sign_ed25519_PUBLICKEYBYTES];
+  unsigned char ed25519_skpk2[crypto_sign_ed25519_SECRETKEYBYTES];
+  unsigned char x25519_pk2[crypto_scalarmult_curve25519_BYTES];
+  unsigned char x25519_sk2[crypto_scalarmult_curve25519_BYTES];
+
+  crypto_sign_ed25519_keypair(ed25519_pk2, ed25519_skpk2);
+
+  crypto_sign_ed25519_pk_to_curve25519(x25519_pk2, ed25519_pk2);
+  crypto_sign_ed25519_sk_to_curve25519(x25519_sk2, ed25519_skpk2);
+
+  // TESTS SIZE :
+  printf("curve25519 : crypto_scalarmult_curve25519_BYTES : %d\n", crypto_scalarmult_curve25519_BYTES);
+  printf("crypto_box_PUBLICKEYBYTES PK : %d\n", crypto_box_PUBLICKEYBYTES);
+  printf("crypto_box_SECRETKEYBYTES SK : %d\n", crypto_box_SECRETKEYBYTES);
+
+  // DH RATCHET STEP
 
 
   printf("--------------------------------------- \n");
