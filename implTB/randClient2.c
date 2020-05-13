@@ -190,7 +190,7 @@ int main(int argc, char *argv[]) {
   //int safeReturn2 = ratchetDecrypt(mk, length_plaintext, ciphertext, nonce, ss_a_client);
   printf("SSA BEFORE DECRYPT : %u \n", ss_a_client[1]);
   printf("STATE_NS before decrypt : %d\n", state_Ns);
-  int safeReturn2 = ratchetDecrypt(length_plaintext_recv, ciphertext_recv, nonce_recv, ss_a_client, &state_Ns);
+  int safeReturn = ratchetDecrypt(length_plaintext_recv, ciphertext_recv, nonce_recv, ss_a_client, &state_Ns);
   printf("STATE_NS after decrypt : %d\n", state_Ns);
   printf("SSA AFTER DECRYPT : %u \n", ss_a_client[1]);
 
@@ -201,7 +201,7 @@ int main(int argc, char *argv[]) {
   unsigned char ciphertext_send[strlen((char*)mess) + crypto_aead_xchacha20poly1305_ietf_ABYTES];
   unsigned char nonce_send[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES];
   printf("SSA BEFORE ENCRYPT : %u \n", ss_a_client[1]);
-  int safeReturn = RatchetEncrypt(ss_a_client, mess, ciphertext_send, nonce_send, &state_Ns);
+  safeReturn = RatchetEncrypt(ss_a_client, mess, ciphertext_send, nonce_send, &state_Ns);
   printf("STATE_NS after encrypt : %d\n", state_Ns);
   printf("SSA AFTER ENCRYPT : %u \n", ss_a_client[1]);
 
@@ -223,8 +223,7 @@ int main(int argc, char *argv[]) {
   //printf("length s = %llu\n", s);
 
   printf("---------------- TEST GENERATE DH KEYPAIR + DH RATCHET STEP ----------------------- \n");
-  // https://libsodium.gitbook.io/doc/advanced/ed25519-curve25519
-
+  // key pair based on the Curve25519 elliptic curves
   // PAIR 1
   unsigned char ed25519_pk[crypto_sign_ed25519_PUBLICKEYBYTES];
   unsigned char ed25519_skpk[crypto_sign_ed25519_SECRETKEYBYTES];
@@ -253,6 +252,7 @@ int main(int argc, char *argv[]) {
   printf("crypto_box_SECRETKEYBYTES SK : %d\n", crypto_box_SECRETKEYBYTES);
 
   // DH RATCHET STEP
+  // return the output from the X25519 function 
   unsigned char scalarmult_q_by_client[crypto_scalarmult_BYTES]; //
   unsigned char scalarmult_q_by_server[crypto_scalarmult_BYTES]; // 2
   unsigned char sharedkey_by_client[crypto_generichash_BYTES];
@@ -285,9 +285,9 @@ int main(int argc, char *argv[]) {
   printf("sharedkey_by_server : %d\n", *sharedkey_by_server);
   printf("sharedkey_by_client : %d\n", *sharedkey_by_client);
 
-  // TESTS :
+  // TESTS KDF:
   uint8_t CKr[CRYPTO_BYTES];
-  printf("SSA BEFORE KDF : %u \n", ss_a_client[1]); // ROOT KEY 
+  printf("SSA BEFORE KDF : %u \n", ss_a_client[1]); // ROOT KEY
   printf("Ckr BEFORE KDF  : %u\n", *CKr);
   printf("sharedkey_by_server BEFORE KDF  : %u\n", sharedkey_by_server);
   printf("*sharedkey_by_server BEFORE KDF  : %u\n", *sharedkey_by_server);
@@ -296,6 +296,18 @@ int main(int argc, char *argv[]) {
   printf("CKr AFTER KDF: %u\n", *CKr);
   printf("sharedkey_by_server AFTER KDF: %u\n", sharedkey_by_server);
   printf("*sharedkey_by_server AFTER KDF: %u\n", *sharedkey_by_server);
+
+  printf("---------------- TEST DH EXCHANGE ----------------------- \n");
+  uint8_t CKr2[CRYPTO_BYTES];
+  strcpy(CKr2, CKr);
+  const unsigned char* messTEST = (const unsigned char*) "lalala";
+  int state_NsTEST = 2;
+  safeReturn = RatchetEncrypt(CKr, messTEST, ciphertext_send, nonce_send, &state_NsTEST);
+  //unsigned char plaintext_length[1] = {len_plain};
+  //unsigned long long length_plaintext_recvTEST = plaintext_length_recv[0];
+  state_NsTEST = state_NsTEST-1;
+  safeReturn = ratchetDecrypt(6, ciphertext_send, nonce_send, CKr2, &state_NsTEST);
+
 
   printf("--------------------------------------- \n");
   printf("DEBUT TEST DISCUSION \n");
