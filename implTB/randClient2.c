@@ -23,9 +23,10 @@
 #include "kem.h"
 #include "verify.h"
 
-#include "dh.h"
 #include "ratchetEncrypt.h"
 #include "ratchetDecrypt.h"
+#include "KDF_RK.h"
+
 
 #define MaxConnectionsAttentes 2306
 #define MaxBuff 2306
@@ -89,13 +90,13 @@ int main(int argc, char *argv[]) {
 
 
 
-  printf("---------------------------------------\n");
+  printf("---------------- KEY AGREEMENT PROTOCOL : SABER -----------------\n");
   // SET PARAMETERS
   uint8_t pk_client[CRYPTO_PUBLICKEYBYTES];
   uint8_t sk_client[CRYPTO_SECRETKEYBYTES];
 
   uint8_t ct[CRYPTO_CIPHERTEXTBYTES];
-  uint8_t ss_a_client[CRYPTO_BYTES], ss_b_server[CRYPTO_BYTES];
+  uint8_t rootKey[CRYPTO_BYTES];
 
   unsigned char entropy_input_client[48];
 
@@ -124,13 +125,14 @@ int main(int argc, char *argv[]) {
   printf("CLIENT ENCODE SSK \n");
   // received pk, so create its own pair pk, sk and will use to encode
   //Key-Encapsulation call; input: pk; output: ciphertext c, shared-secret ss_a;
-  crypto_kem_enc(ct, ss_a_client, server_pk);
+  crypto_kem_enc(ct, rootKey, server_pk);
 
   printf("after encaps send c : \n");
   send(ServerSocket, &ct, sizeof(ct), NULL);
-  printf("receive confirmation from server for c_t : \n");
-  //int confirmation_ct;
-  char *dataConf; /* Buffer de reception */
+
+  printf("receive confirmation from server for c_t  : ");
+  //int confirmation_ct
+  char *dataConf;
   dataConf = (char*) malloc( MaxBuff );
   n = recv(ServerSocket, dataConf ,MaxBuff, NULL);
   if( n  < 0 ) {
@@ -138,9 +140,10 @@ int main(int argc, char *argv[]) {
   }
   printf("%s \n", dataConf);
 
-  printf("after encaps send ss_a : \n");
-  send(ServerSocket, &ss_a_client, sizeof(ss_a_client), NULL);
-  printf("receive confirmation from server for ss_a : \n");
+  printf("after encaps send ss_a : \n"); // FOR TEST TO REMOVE THEN !!!!!!!
+  send(ServerSocket, &rootKey, sizeof(rootKey), NULL);
+
+  printf("receive confirmation from server for ss_a :  ");
   //int confirmation_ct2;
   char *dataConf2;
   dataConf2 = (char*) malloc( MaxBuff );
@@ -150,11 +153,53 @@ int main(int argc, char *argv[]) {
   }
   printf("%s \n", dataConf2);
 
-  printf("DIS MOI QUE TU PRINT STP STP STP PLEIN D'AMOUR \n");
+  //printf("DIS MOI QUE TU PRINT STP STP STP PLEIN D'AMOUR \n");
+
+  printf("------------------------------ \n");
+  printf("OUR SHARED SECRET (ss_a, ss_b) IS OUR ROOTKEY \n");
+
+  printf("---------------- DOUBLE RATCHET : SABER -----------------\n");
+
+  // KEY AND SECRET GENERATION
+
+  uint8_t ss_a_client[CRYPTO_BYTES];
+
+  n = recv(ServerSocket, &server_pk ,MaxBuff, NULL);
+  if( n  < 0 ) {
+    die( "Problem encountered Cannot receive message" );
+  }
+  printf( "test public key server received [0] : %d\n", server_pk[0]);
+
+  crypto_kem_enc(ct, ss_a_client, server_pk);
+
+  printf( "test ct 0 : %d\n", ct[0]);
+  send(ServerSocket, &ct, sizeof(ct), NULL);
+
+  printf(" ss client 0 : %d\n", rootKey[0]);
+  printf(" ss2 client 0 : %d\n", ss_a_client[0]);
+
+  // SYMMETRIC-KEY RATCHET
+
+  uint8_t CKr[CRYPTO_BYTES];
+  //printf("SSA BEFORE KDF : %u \n", rootKey[0]); // ROOT KEY
+  printf("Ckr BEFORE KDF  : %u\n", *CKr);
+  //printf("SSA2 BEFORE KDF : %u \n", ss_a_client[0]); // shared secret
+
+  //printf("sharedkey_by_server BEFORE KDF  : %u\n", sharedkey_by_server);
+  //printf("*sharedkey_by_server BEFORE KDF  : %u\n", *sharedkey_by_server);
+  KDF_RK(rootKey, CKr, ss_a_client);
+  // ROOTKEY (rootKey) IS MODIFIED
+  printf("SSA AFTER KDF : %u \n", rootKey[0]);
+  // CK IS MODIFIED
+  printf("CKr AFTER KDF: %u\n", *CKr);
+  // NOT ss_a_client
+  printf("SSA2 AFTER KDF : %u \n", ss_a_client[0]);
+  //printf("sharedkey_by_server AFTER KDF: %u\n", sharedkey_by_server);
+  //printf("*sharedkey_by_server AFTER KDF: %u\n", *sharedkey_by_server);
 
 
   printf("------------------------------------- \n");
-  printf("----------- ECHANGE ENCRYPT (ICI DECRYPT) ------------------- \n");
+  printf("----------- ECHANGE ENCRYPT1 (ICI DECRYPT) ------------------- \n");
   // CLIENT NEEDS : mk, len_plain, ciphertext, nonce
   int state_Ns = 0;
 
@@ -187,12 +232,12 @@ int main(int argc, char *argv[]) {
   }
 
 
-  //int safeReturn2 = ratchetDecrypt(mk, length_plaintext, ciphertext, nonce, ss_a_client);
-  printf("SSA BEFORE DECRYPT : %u \n", ss_a_client[1]);
+  //int safeReturn2 = ratchetDecrypt(mk, length_plaintext, ciphertext, nonce, rootKey);
+  printf("SSA BEFORE DECRYPT : %u \n", rootKey[1]);
   printf("STATE_NS before decrypt : %d\n", state_Ns);
-  int safeReturn = ratchetDecrypt(length_plaintext_recv, ciphertext_recv, nonce_recv, ss_a_client, &state_Ns);
+  int safeReturn = ratchetDecrypt(length_plaintext_recv, ciphertext_recv, nonce_recv, rootKey, &state_Ns);
   printf("STATE_NS after decrypt : %d\n", state_Ns);
-  printf("SSA AFTER DECRYPT : %u \n", ss_a_client[1]);
+  printf("SSA AFTER DECRYPT : %u \n", rootKey[1]);
 
   printf("------------------------------ \n");
   printf("----------- ECHANGE ENCRYPTE 2 ------------------- \n");
@@ -200,10 +245,10 @@ int main(int argc, char *argv[]) {
   const unsigned char* mess = (const unsigned char*) "affiches toi stp bis";
   unsigned char ciphertext_send[strlen((char*)mess) + crypto_aead_xchacha20poly1305_ietf_ABYTES];
   unsigned char nonce_send[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES];
-  printf("SSA BEFORE ENCRYPT : %u \n", ss_a_client[1]);
-  safeReturn = RatchetEncrypt(ss_a_client, mess, ciphertext_send, nonce_send, &state_Ns);
+  printf("SSA BEFORE ENCRYPT : %u \n", rootKey[1]);
+  safeReturn = RatchetEncrypt(rootKey, mess, ciphertext_send, nonce_send, &state_Ns);
   printf("STATE_NS after encrypt : %d\n", state_Ns);
-  printf("SSA AFTER ENCRYPT : %u \n", ss_a_client[1]);
+  printf("SSA AFTER ENCRYPT : %u \n", rootKey[1]);
 
   unsigned long long len_plain_send = strlen((char*)mess);
   printf("L0ONGUER : %lld \n", len_plain_send );
@@ -222,6 +267,7 @@ int main(int argc, char *argv[]) {
   */
   //printf("length s = %llu\n", s);
 
+/*
   printf("---------------- TEST GENERATE DH KEYPAIR + DH RATCHET STEP ----------------------- \n");
   // key pair based on the Curve25519 elliptic curves
   // PAIR 1
@@ -252,15 +298,15 @@ int main(int argc, char *argv[]) {
   printf("crypto_box_SECRETKEYBYTES SK : %d\n", crypto_box_SECRETKEYBYTES);
 
   // DH RATCHET STEP
-  // return the output from the X25519 function 
+  // return the output from the X25519 function
   unsigned char scalarmult_q_by_client[crypto_scalarmult_BYTES]; //
   unsigned char scalarmult_q_by_server[crypto_scalarmult_BYTES]; // 2
   unsigned char sharedkey_by_client[crypto_generichash_BYTES];
   unsigned char sharedkey_by_server[crypto_generichash_BYTES];
   crypto_generichash_state h;
 
-  /* The client derives a shared key from its secret key and the server's public key */
-  /* shared key = h(q ‖ client_publickey ‖ server_publickey) */
+  //The client derives a shared key from its secret key and the server's public key
+  //shared key = h(q ‖ client_publickey ‖ server_publickey)
   if (crypto_scalarmult(scalarmult_q_by_client, x25519_sk, x25519_pk2) != 0) {
       printf("error deriving the shared secret key using DH, client's side");
   }
@@ -270,8 +316,8 @@ int main(int argc, char *argv[]) {
   crypto_generichash_update(&h, x25519_pk2, sizeof x25519_pk2);
   crypto_generichash_final(&h, sharedkey_by_client, sizeof sharedkey_by_client);
 
-  /* The server derives a shared key from its secret key and the client's public key */
-  /* shared key = h(q ‖ client_publickey ‖ server_publickey) */
+  // The server derives a shared key from its secret key and the client's public key
+  // shared key = h(q ‖ client_publickey ‖ server_publickey)
   if (crypto_scalarmult(scalarmult_q_by_server, x25519_sk2, x25519_pk) != 0) {
       printf("error deriving the shared secret key using DH, server's side");
   }
@@ -281,33 +327,31 @@ int main(int argc, char *argv[]) {
   crypto_generichash_update(&h, x25519_pk2, sizeof x25519_pk2);
   crypto_generichash_final(&h, sharedkey_by_server, sizeof sharedkey_by_server);
 
-  /* sharedkey_by_client and sharedkey_by_server are identical :  */
+  // sharedkey_by_client and sharedkey_by_server are identical :
   printf("sharedkey_by_server : %d\n", *sharedkey_by_server);
   printf("sharedkey_by_client : %d\n", *sharedkey_by_client);
 
   // TESTS KDF:
   uint8_t CKr[CRYPTO_BYTES];
-  printf("SSA BEFORE KDF : %u \n", ss_a_client[1]); // ROOT KEY
+  printf("SSA BEFORE KDF : %u \n", rootKey[1]); // ROOT KEY
   printf("Ckr BEFORE KDF  : %u\n", *CKr);
   printf("sharedkey_by_server BEFORE KDF  : %u\n", sharedkey_by_server);
   printf("*sharedkey_by_server BEFORE KDF  : %u\n", *sharedkey_by_server);
-  KDF_RK(ss_a_client, CKr, sharedkey_by_server);
-  printf("SSA AFTER KDF : %u \n", ss_a_client[1]);
+  KDF_RK(rootKey, CKr, sharedkey_by_server);
+  printf("SSA AFTER KDF : %u \n", rootKey[1]);
   printf("CKr AFTER KDF: %u\n", *CKr);
   printf("sharedkey_by_server AFTER KDF: %u\n", sharedkey_by_server);
   printf("*sharedkey_by_server AFTER KDF: %u\n", *sharedkey_by_server);
 
   printf("---------------- TEST DH EXCHANGE ----------------------- \n");
-  uint8_t CKr2[CRYPTO_BYTES];
+  uint8_t CKr2[CRYPTO_BYTES]; // for tests (CKr will be updated)
   strcpy(CKr2, CKr);
   const unsigned char* messTEST = (const unsigned char*) "lalala";
   int state_NsTEST = 2;
   safeReturn = RatchetEncrypt(CKr, messTEST, ciphertext_send, nonce_send, &state_NsTEST);
-  //unsigned char plaintext_length[1] = {len_plain};
-  //unsigned long long length_plaintext_recvTEST = plaintext_length_recv[0];
   state_NsTEST = state_NsTEST-1;
   safeReturn = ratchetDecrypt(6, ciphertext_send, nonce_send, CKr2, &state_NsTEST);
-
+*/
 
   printf("--------------------------------------- \n");
   printf("DEBUT TEST DISCUSION \n");

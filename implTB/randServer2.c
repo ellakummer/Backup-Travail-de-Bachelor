@@ -23,9 +23,9 @@
 #include "kem.h"
 #include "verify.h"
 
-#include "dh.h"
 #include "ratchetEncrypt.h"
 #include "ratchetDecrypt.h"
+#include "KDF_RK.h"
 
 
 /*
@@ -136,12 +136,12 @@ void exchange( int ClientSocket, const char *chemin) {
 
   uint64_t i_e;
   */
-  /*
-  printf("echange, The integer CRYPTO_PUBLICKEYBYTES is: %d\n", CRYPTO_PUBLICKEYBYTES);
-  printf("echange, TThe integer CRYPTO_SECRETKEYBYTES is: %d\n", CRYPTO_SECRETKEYBYTES);
-  printf("echange, TThe integer CRYPTO_CIPHERTEXTBYTES is: %d\n", CRYPTO_CIPHERTEXTBYTES);
-  printf("echange, TThe integer CRYPTO_BYTES is: %d\n", CRYPTO_BYTES);
-  */
+  printf("KEX LENGTH TESTS FOR SABER : \n");
+  printf("The integer CRYPTO_PUBLICKEYBYTES is: %d\n", CRYPTO_PUBLICKEYBYTES);
+  printf("The integer CRYPTO_SECRETKEYBYTES is: %d\n", CRYPTO_SECRETKEYBYTES);
+  printf("The integer CRYPTO_CIPHERTEXTBYTES is: %d\n", CRYPTO_CIPHERTEXTBYTES);
+  printf("The integer CRYPTO_BYTES is: %d\n", CRYPTO_BYTES);
+
 
   /*
   lect = read(ClientSocket, &n ,MaxALire ); // lecture = réception du nombre de bytes
@@ -153,15 +153,13 @@ void exchange( int ClientSocket, const char *chemin) {
 
 
 
-  printf("---------------------------------------\n");
-
-  printf("SABER ENVOI CLE\n");
+  printf("---------------- KEY AGREEMENT PROTOCOL : SABER -----------------\n");
 
   uint8_t pk_server[CRYPTO_PUBLICKEYBYTES];
   uint8_t sk_server[CRYPTO_SECRETKEYBYTES];
 
   uint8_t ct[CRYPTO_CIPHERTEXTBYTES];
-  uint8_t ss_a_server[CRYPTO_BYTES], ss_b_client[CRYPTO_BYTES];
+  uint8_t rootKey[CRYPTO_BYTES], ss_b_client[CRYPTO_BYTES];
 
   unsigned char entropy_input[48];
 
@@ -169,8 +167,8 @@ void exchange( int ClientSocket, const char *chemin) {
 
   // test 0
   for(i=0; i<SABER_KEYBYTES; i++){
-    printf("%u \t %u\n", ss_a_server[i], ss_b_client[i]);
-    if(ss_a_server[i] != ss_b_client[i]) {
+    printf("%u \t %u\n", rootKey[i], ss_b_client[i]);
+    if(rootKey[i] != ss_b_client[i]) {
       printf(" ----- ERR CCA KEM ------\n");
       break;
     }
@@ -199,13 +197,7 @@ void exchange( int ClientSocket, const char *chemin) {
   printf("check size pk = %ld\n ", sizeof(pk_server));
 
   printf("TEST ENVOI PK, PRAY \n");
-  /*
-  printf("on va deja test d'envoyer un uint8_t \n"); // 8 bit integer type
-  uint8_t num_u = 255;
-  printf("le uint8_t cote server ->  %d\n", num_u);
-  send(ClientSocket,&num_u,sizeof(num_u), NULL);
-  printf("ok le test uint8_t fonctionne \n");
-  */
+
   // ---------- SEND PK SABER
   printf("MAINTENANT LES CHOSES SERIEUSES : LA CLE (J'AI PEUR) \n");
   send(ClientSocket, &pk_server, sizeof(pk_server), NULL);
@@ -215,32 +207,34 @@ void exchange( int ClientSocket, const char *chemin) {
   printf("SERVER WAITS UNTIL CLIENT ENCODE MESSAGE \n ");
   printf("receive the encrypted encaps ... \n");
 
-  printf("receive c : \n");
+  printf("receive ct, ");
   //int read_client_ct;
   n = recv(ClientSocket, &ct ,MaxBuff, NULL);
   if( n  < 0 ) {
     die( "Problem encountered Cannot receive message" );
   }
-  printf("send confirmation well received c_t : \n");
+
+  printf("send confirmation well received c_t \n");
   unsigned char discussion[MaxBuff] = "okreceivedct";
-  printf("%s \n", discussion);
+  //printf("%s \n", discussion);
   send(ClientSocket, &discussion, sizeof(discussion), NULL);
 
-  printf("receive ss_a : \n");
+  printf("receive ss_a, ");
   //int read_client_ssb;
   n = recv(ClientSocket, &ss_b_client ,MaxBuff, NULL);
   if( n  < 0 ) {
     die( "Problem encountered Cannot receive message" );
   }
-  printf("send confirmation well received ssa : \n");
+
+  printf("send confirmation well received ssa  \n");
   unsigned char discussion2[MaxBuff] = "okreceivedssa";
-  printf("%s \n", discussion2);
+  //printf("%s \n", discussion2);
   send(ClientSocket, &discussion2, sizeof(discussion2), NULL);
 
   printf("TEST WELL RECEIVED SSB : ");
   for(i=0; i<SABER_KEYBYTES; i++){
-    printf("%u \t %u\n", ss_a_server[i], ss_b_client[i]);
-    if(ss_a_server[i] != ss_b_client[i]) {
+    printf("%u \t %u\n", rootKey[i], ss_b_client[i]);
+    if(rootKey[i] != ss_b_client[i]) {
       printf(" ----- ERR CCA KEM ------\n");
       break;
     }
@@ -248,48 +242,66 @@ void exchange( int ClientSocket, const char *chemin) {
 
   // DECAPS
   printf("SERVER DECRYPT : \n");
-  //Key-Decapsulation call; input: sk, c; output: shared-secret ss_b (ss_a_server);
-  crypto_kem_dec(ss_a_server, ct, sk_server);
+  //Key-Decapsulation call; input: sk, c; output: shared-secret ss_b (rootKey);
+  crypto_kem_dec(rootKey, ct, sk_server);
 
   // Functional verification: check if ss_a == ss_b?
   for(i=0; i<SABER_KEYBYTES; i++){
-    printf("%u \t %u\n", ss_a_server[i], ss_b_client[i]);
-    if(ss_a_server[i] != ss_b_client[i]) {
+    printf("%u \t %u\n", rootKey[i], ss_b_client[i]);
+    if(rootKey[i] != ss_b_client[i]) {
       printf(" ----- ERR CCA KEM ------\n");
       break;
     }
   }
 
-  printf("---------------------------------------\n");
-  printf("DEBUT TEST DH \n");
+  printf("------------------------------ \n");
+  printf("OUR SHARED SECRET (ss_a, ss_b) IS OUR ROOTKEY \n");
 
-  /*
-  GENERATE_DH(): This function is recommended to generate a key pair based
-  on the Curve25519 or Curve448 elliptic curves [7].
+  printf("---------------- DOUBLE RATCHET : SABER -----------------\n");
 
-  DH(dh_pair, dh_pub): This function is recommended to return the output
-  from the X25519 or X448 function as defined in [7]. There is no need to c
-  heck for invalid public keys.
+  uint8_t ss_a_server[CRYPTO_BYTES];
+  // generate new key pair : key pair update
+  crypto_kem_keypair(pk_server, sk_server);
 
-  https://github.com/jedisct1/libsodium/blob/master/src/libsodium/include/sodium/crypto_box_curve25519xchacha20poly1305.h
+  printf( "test public key server[0] : %d\n", pk_server[0]);
+  send(ClientSocket, &pk_server, sizeof(pk_server), NULL);
 
-  */
+  printf("receive c \n");
+  //int read_client_ct;
+  n = recv(ClientSocket, &ct ,MaxBuff, NULL);
+  if( n  < 0 ) {
+    die( "Problem encountered Cannot receive message" );
+  }
+  printf( "test ct 0 : %d\n", ct[0]);
 
-  uint64_t a = randomint64();
-	uint64_t b = randomint64();
-  uint64_t testdh_64 = dh_computing(a,b);
-	printf("uint64_t dh key derived : %I64x\n", testdh_64);
+  crypto_kem_dec(ss_a_server, ct, sk_server);
+  printf( "test ss 0 : %d\n", rootKey[0]);
+  printf( "test ss2 0 : %d\n", ss_a_server[0]);
 
-  uint32_t testdh_32 = (uint32_t) testdh_64;
-  printf("uint32_t dh key derived : %I32x\n", testdh_32);
+  // SYMMETRIC-KEY RATCHET
 
-  // HOW WE GONNA DO IT : (ok later)
-  // receive public_key_client (b)
-  // create a our private_key_server
-  // generate the DH output (! in our dh computes both which is not necessary)
+  uint8_t CKr[CRYPTO_BYTES];
+  //printf("SSA BEFORE KDF : %u \n", ss_a_client[0]); // ROOT KEY
+  printf("Ckr BEFORE KDF  : %u\n", *CKr);
+  //printf("SSA2 BEFORE KDF : %u \n", ss_a_client2[0]); // shared secret
 
-  printf("---------------------------------------\n");
+  //printf("sharedkey_by_server BEFORE KDF  : %u\n", sharedkey_by_server);
+  //printf("*sharedkey_by_server BEFORE KDF  : %u\n", *sharedkey_by_server);
+  KDF_RK(rootKey, CKr, ss_a_server);
+  // ROOTKEY (ss_a_client2) IS MODIFIED
+  printf("SSA AFTER KDF : %u \n", rootKey[0]);
+  // CK IS MODIFIED
+  printf("CKr AFTER KDF: %u\n", *CKr);
+  // NOT ss_a_client
+  printf("SSA2 AFTER KDF : %u \n", ss_a_server[0]);
+  //printf("sharedkey_by_server AFTER KDF: %u\n", sharedkey_by_server);
+  //printf("*sharedkey_by_server AFTER KDF: %u\n", *sharedkey_by_server);
+
+
+  printf("-------------------------------------------------------------\n");
   printf("DEBUT TEST RATCHET ENCRYPT \n");
+  printf("------------------------------------------------------------- \n");
+  printf("----------- ECHANGE ENCRYPTE 1 ------------------- \n");
 
   printf("tests LENGTHS (check same size : perfect): \n");
   printf("libsodium : crypto_auth_hmacsha256_BYTES for kdf: %d\n", crypto_auth_hmacsha256_BYTES);
@@ -298,8 +310,8 @@ void exchange( int ClientSocket, const char *chemin) {
   printf("saber : CRYPTO_BYTES for ss  : %d\n", CRYPTO_BYTES);
   // uint8_t VS unsigned char ok
 
-  // KEY SEE HOW !! -> same size as SABER YES can use ss_a_server
-  //testKDF = RatchetEncrypt(ss_a_server);
+  // KEY SEE HOW !! -> same size as SABER YES can use rootKey
+  //testKDF = RatchetEncrypt(rootKey);
   unsigned char *key_CKs[crypto_auth_hmacsha256_KEYBYTES];
   unsigned char *key_CKr[crypto_auth_hmacsha256_KEYBYTES];
   crypto_auth_hmacsha256_keygen(key_CKs);
@@ -312,7 +324,6 @@ void exchange( int ClientSocket, const char *chemin) {
   // MESSAGE TO ENCRYPT
   //const unsigned char* mess = (const unsigned char*) "teet go y croyt";
   const unsigned char* mess = (const unsigned char*) "affiches toi stp <3";
-
   /*
   char mess_inter[MaxBuff];
   printf("Write the message to encrypt :  ");
@@ -335,12 +346,12 @@ void exchange( int ClientSocket, const char *chemin) {
   printf("------- \n");
   int safeReturn = 0;
   //safeReturn = RatchetEncrypt(mk, key_CKs, mess, ciphertext, nonce);
-  //safeReturn = RatchetEncrypt(mk_send, ss_a_server, mess, ciphertext_send, nonce_send);
-  printf("SSA BEFORE ENCRYPT : %u \n", ss_a_server[1]);
+  //safeReturn = RatchetEncrypt(mk_send, rootKey, mess, ciphertext_send, nonce_send);
+  printf("SSA BEFORE ENCRYPT : %u \n", rootKey[1]);
   printf("STATE_NS before encrypt : %d\n", state_Ns);
-  safeReturn = RatchetEncrypt(ss_a_server, mess, ciphertext_send, nonce_send, &state_Ns);
+  safeReturn = RatchetEncrypt(rootKey, mess, ciphertext_send, nonce_send, &state_Ns);
   printf("STATE_NS after encrypt : %d\n", state_Ns);
-  printf("SSA AFTER ENCRYPT : %u \n", ss_a_server[1]);
+  printf("SSA AFTER ENCRYPT : %u \n", rootKey[1]);
 
   printf("---- \n");
   printf("*CKs inside SERVER AFTER:%u\n", *key_CKs);
@@ -356,9 +367,6 @@ void exchange( int ClientSocket, const char *chemin) {
   unsigned long long len_plain = strlen((char*)mess);
   printf("Very Large Message : %lld \n", len_plain );
 
-
-  printf("------------------------------ \n");
-  printf("----------- ECHANGE ENCRYPTE 1 ------------------- \n");
   // LE CLIENT A BESOIN DE : mk, len_plain, ciphertext, nonce
 
   unsigned char plaintext_length[1] = {len_plain};
@@ -409,10 +417,10 @@ void exchange( int ClientSocket, const char *chemin) {
     printf("soucis in receiving nonce \n");
   }
 
-  printf("SSA BEFORE DECRYPT : %u \n", ss_a_server[1]);
-  int safeReturn2 = ratchetDecrypt(length_plaintext_recv, ciphertext_recv, nonce_recv, ss_a_server, &state_Ns);
+  printf("SSA BEFORE DECRYPT : %u \n", rootKey[1]);
+  int safeReturn2 = ratchetDecrypt(length_plaintext_recv, ciphertext_recv, nonce_recv, rootKey, &state_Ns);
   printf("STATE_NS after decrypt : %d\n", state_Ns);
-  printf("SSA AFTER DECRYPT : %u \n", ss_a_server[1]);
+  printf("SSA AFTER DECRYPT : %u \n", rootKey[1]);
 
 
 
