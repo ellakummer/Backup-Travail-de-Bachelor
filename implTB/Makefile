@@ -12,8 +12,8 @@ CFLAGS5=-Wall -Wextra -g -fomit-frame-pointer -march=native --pedantic -std=c99
 all: test/PQCgenKAT_kem \
      test/test_kex \
      test/kem \
-		 randClient \
-		 randServer \
+		 client \
+		 server \
 
 SOURCES = pack_unpack.c poly.c rng.c fips202.c verify.c cbd.c SABER_indcpa.c kem.c
 HEADERS = SABER_params.h pack_unpack.h poly.h rng.h fips202.h verify.h cbd.h SABER_indcpa.h kem.h
@@ -44,11 +44,11 @@ test:
 common.o: common.c common.h
 	$(CC) $(CFLAGS4) -c -o common.o common.c
 
-randClient: common.c ratchetEncrypt.c ratchetDecrypt.c KDF_RK.c $(SOURCES) common.h ratchetEncrypt.h ratchetDecrypt.h KDF_RK.h $(HEADERS) randClient.c
-	$(CC) $(CFLAGS4) -o $@ common.c ratchetEncrypt.c ratchetDecrypt.c KDF_RK.c $(SOURCES) randClient.c -lcrypto -lsodium
+client: common.c ratchetEncrypt.c ratchetDecrypt.c KDF_RK.c $(SOURCES) common.h ratchetEncrypt.h ratchetDecrypt.h KDF_RK.h $(HEADERS) client.c
+	$(CC) $(CFLAGS4) -o $@ common.c ratchetEncrypt.c ratchetDecrypt.c KDF_RK.c $(SOURCES) client.c -lcrypto -lsodium
 
-randServer: common.c ratchetEncrypt.c ratchetDecrypt.c KDF_RK.c $(SOURCES) common.h ratchetEncrypt.h ratchetDecrypt.h KDF_RK.h $(HEADERS) randServer.c
-	$(CC) $(CFLAGS4) -o $@ common.c ratchetEncrypt.c ratchetDecrypt.c KDF_RK.c $(SOURCES) randServer.c -lcrypto -lsodium
+server: common.c ratchetEncrypt.c ratchetDecrypt.c KDF_RK.c $(SOURCES) common.h ratchetEncrypt.h ratchetDecrypt.h KDF_RK.h $(HEADERS) server.c
+	$(CC) $(CFLAGS4) -o $@ common.c ratchetEncrypt.c ratchetDecrypt.c KDF_RK.c $(SOURCES) server.c -lcrypto -lsodium
 
 
 
@@ -57,4 +57,4 @@ clean:
 	-$(RM) -r test/test_kex
 	-$(RM) -r test/kem
 	-$(RM) -r test/PQCgenKAT_kem
-	rm -rf *.o randClient randServer dh
+	rm -rf *.o client server dh
