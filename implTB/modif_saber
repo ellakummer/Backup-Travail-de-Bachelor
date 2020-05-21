@@ -1,0 +1,13 @@
+Had to modify SABER function :
+
+randombytes-> randombytes_saber
+randombytes_init -> randombytes_init_saber
+
+in :
+rng.c
+rng.h
+test_kex.c
+kem.c
+SABER_indcpa.c
+PQCgenKAT_kem.c
+
