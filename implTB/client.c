@@ -12,6 +12,7 @@
 #include <fcntl.h>
 #include <assert.h>
 #include <time.h>
+#include <inttypes.h>
 
 #include "common.h"
 
@@ -23,6 +24,7 @@
 #include "SABER_indcpa.h"
 #include "kem.h"
 #include "verify.h"
+#include "cpucycles.c"
 
 #include "ratchetEncrypt.h"
 #include "ratchetDecrypt.h"
@@ -40,7 +42,7 @@
 #define ADDITIONAL_DATA_LEN 6
 
 
-/* Prépare l'adresse du serveur */
+// Prepare server's adress
 void prepare_address( struct sockaddr_in *address, const char *host, int port ) {
   size_t addrSize = sizeof( address );
   memset(address, 0, addrSize);
@@ -49,7 +51,7 @@ void prepare_address( struct sockaddr_in *address, const char *host, int port ) 
   address->sin_port = htons(port); // le port en big endian
 }
 
-/* Construit le socket client */
+// Build client's socket
 int makeSocket( const char *host, int port ) {
   struct sockaddr_in address;
   int sock = socket(PF_INET, SOCK_STREAM, 0); // SOCKSTREAM -> par flot, avec connection
@@ -79,7 +81,7 @@ int main(int argc, char *argv[]) {
   host = argv[1];
   port = atoi(argv[2]);
 
-  /* Connection */
+  // Connection
 
   ServerSocket = makeSocket( host, port ); // fonctions du dessus
 
@@ -94,7 +96,6 @@ int main(int argc, char *argv[]) {
 
   uint8_t server_pk[CRYPTO_PUBLICKEYBYTES];
 
-  //int read_server_pk;
   n = recv(ServerSocket, &server_pk ,MaxBuff, 0);
   if( n  < 0 ) {
     die( "Problem encountered Cannot receive message" );
@@ -152,10 +153,7 @@ int main(int argc, char *argv[]) {
 
   uint8_t CK[CRYPTO_BYTES] = {0};
   printf("Ckr before KDF  : %u\n", *CK);
-  //printf("SSA2 BEFORE KDF : %u \n", ss_a_client[0]); // shared secret
 
-  //printf("sharedkey_by_server BEFORE KDF  : %u\n", sharedkey_by_server);
-  //printf("*sharedkey_by_server BEFORE KDF  : %u\n", *sharedkey_by_server);
   KDF_RK(rootKey, CK, ss_a_client);
   // ROOTKEY (rootKey) IS MODIFIED
   printf("root key after KDF : %u \n", rootKey[1]);
@@ -163,8 +161,6 @@ int main(int argc, char *argv[]) {
   printf("CKr after KDF: %u\n", *CK);
   // NOT ss_a_client
   printf("shared scret after KDF : %u \n", ss_a_client[1]);
-  //printf("sharedkey_by_server AFTER KDF: %u\n", sharedkey_by_server);
-  //printf("*sharedkey_by_server AFTER KDF: %u\n", *sharedkey_by_server);
 
   printf("\n");
   printf("---------------------- START DISCUSSION -------------------------\n");
@@ -200,7 +196,7 @@ int main(int argc, char *argv[]) {
       printf("root key after KDF : %u \n", rootKey[1]);
       // CK IS MODIFIED
       printf("CKr after KDF: %u\n", *CK);
-      // NOT ss_a_client
+      // ss_a_client IS NOT MODIFIED
       printf("shared secret after KDF : %u \n", ss_a_client[1]);
 
       counter = 0;
@@ -211,6 +207,7 @@ int main(int argc, char *argv[]) {
     // RECEIVE
 
     clock_t begin = clock();
+    uint64_t CLOCK1=cpucycles();
     char *plaintext_length_recv;
     plaintext_length_recv = (char*) malloc( 1 );
     if (recv( ServerSocket, plaintext_length_recv, 1, 0) < 0){
@@ -230,15 +227,14 @@ int main(int argc, char *argv[]) {
       printf("soucis in receiving nonce \n");
     }
 
-    //printf("SSA BEFORE DECRYPT : %u \n", rootKey[1]);
-    //printf("STATE_NS before decrypt : %d\n", state_Ns);
     n = ratchetDecrypt(length_plaintext_recv, ciphertext_recv, nonce_recv, CK, &state_Ns);
     counter += 1;
-    //printf("STATE_NS after decrypt : %d\n", state_Ns);
-    //printf("SSA AFTER DECRYPT : %u \n", rootKey[1]);
     clock_t end = clock();
+    uint64_t CLOCK2=cpucycles();
     double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+    uint64_t CLOCK_decrypt=CLOCK2-CLOCK1;
     printf("time computation client side decrypt : %f [s] \n", time_spent);
+    printf("cpu cycles decryption : %" PRIu64 "\n", CLOCK_decrypt);
 
 
 
@@ -249,18 +245,13 @@ int main(int argc, char *argv[]) {
     printf("Write the message to encrypt :  ");
     fgets(mess_inter, MaxBuff, stdin);
     const unsigned char* mess = (const unsigned char*) mess_inter;
-    //printf("message to encrypt : %s\n", mess);
 
     unsigned char ciphertext_send[strlen((char*)mess) + crypto_aead_xchacha20poly1305_ietf_ABYTES];
     unsigned char nonce_send[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES];
-    //printf("SSA BEFORE ENCRYPT : %u \n", rootKey[1]);
     n = RatchetEncrypt(CK, mess, ciphertext_send, nonce_send, &state_Ns);
     counter += 1;
-    //printf("STATE_NS after encrypt : %d\n", state_Ns);
-    //printf("SSA AFTER ENCRYPT : %u \n", rootKey[1]);
 
     unsigned long long len_plain_send = strlen((char*)mess);
-    //printf("L0ONGUER : %lld \n", len_plain_send );
     unsigned char plaintext_length_send[1] = {len_plain_send};
     send(ServerSocket,&plaintext_length_send,sizeof(plaintext_length_send), 0);
     send(ServerSocket, ciphertext_send, len_plain_send + crypto_aead_xchacha20poly1305_ietf_ABYTES, 0);

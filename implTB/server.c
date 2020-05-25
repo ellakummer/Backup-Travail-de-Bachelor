@@ -12,10 +12,9 @@
 #include <fcntl.h>
 #include <assert.h>
 #include <time.h>
+#include <inttypes.h>
 
 #include <sodium.h>
-
-#include "common.h"
 
 #include "api.h"
 #include "poly.h"
@@ -23,15 +22,13 @@
 #include "SABER_indcpa.h"
 #include "kem.h"
 #include "verify.h"
+#include "cpucycles.c"
 
 #include "ratchetEncrypt.h"
 #include "ratchetDecrypt.h"
 #include "KDF_RK.h"
+#include "common.h"
 
-
-/*
-#include "cpucycles.c"
-*/
 
 #define MaxConnectionsAttentes 2306
 #define MaxBuff 2306
@@ -72,30 +69,30 @@ int test_kem_cca()
 }
 
 
-/* Prépare l'adresse du serveur */
+// Prepare server address
 void prepare_address( struct sockaddr_in *address, int port) {
   size_t addrSize = sizeof( address );
-  memset(address, 0, addrSize); // mettre tout à 0
-  address->sin_family = AF_INET; // IPv4
-  address->sin_addr.s_addr = htonl(INADDR_ANY); // INADDR_ANY : pour affecter la socket à toutes les interfaces locales , htonl : obtenir adresse numérique valide
-  address->sin_port = htons(port); // le port en big endian
+  memset(address, 0, addrSize);
+  address->sin_family = AF_INET;
+  address->sin_addr.s_addr = htonl(INADDR_ANY);
+  address->sin_port = htons(port);
 }
 
-/* Construit le socket serveur */
+// Build server socket
 int makeSocket( int port) {
-  struct sockaddr_in address; // créer la structure (contient : famille, port, adresse internet)
-  int sock = socket(PF_INET, SOCK_STREAM, 0); // créer descripteur du socket  (SOCKSTREAM -> par flot, avec connection) (0 car par TCP)
+  struct sockaddr_in address;
+  int sock = socket(PF_INET, SOCK_STREAM, 0);
   if( sock < 0 ) {
     die("Failed to create socket");
   }
   prepare_address( &address, port );
 
-  // on va attacher le socket serveur à une adresse : BIND
+  // bind socket to adress
   if (bind(sock, (struct sockaddr *) &address, sizeof(address)) < 0) {
   	die("Failed to bind the server socket");
   }
 
-  // on va écouter le début d'une connection : LISTEN
+  // listening and waiting for rhe start of a new connection :
   if(listen(sock, MaxConnectionsAttentes) < 0) {
   	die("Failed to listen on server socket");
   }
@@ -105,7 +102,6 @@ int makeSocket( int port) {
 
 
 
-//void exchange( int ClientSocket, const char *chemin) {
 void exchange( int ClientSocket) {
 
   ssize_t n=0;
@@ -120,6 +116,7 @@ void exchange( int ClientSocket) {
 
   printf("---------------- KEY AGREEMENT PROTOCOL : SABER -----------------\n");
   clock_t begin = clock();
+  uint64_t CLOCK1=cpucycles();
 
   uint8_t pk_server[CRYPTO_PUBLICKEYBYTES];
   uint8_t sk_server[CRYPTO_SECRETKEYBYTES];
@@ -149,29 +146,23 @@ void exchange( int ClientSocket) {
   send(ClientSocket, &pk_server, sizeof(pk_server), 0);
 
   printf("receive from the client parameters needed to establish the shared secret \n");
-  //int read_client_ct;
   n = recv(ClientSocket, &ct ,MaxBuff, 0);
   if( n  < 0 ) {
     die( "Problem encountered Cannot receive message" );
   }
 
-  // send confirmation weel received ct
   unsigned char discussion[MaxBuff] = "okreceivedct";
-  //printf("%s \n", discussion);
   send(ClientSocket, &discussion, sizeof(discussion), 0);
 
-  //int read_client_ssb;
   n = recv(ClientSocket, &ss_b_client ,MaxBuff, 0);
   if( n  < 0 ) {
     die( "Problem encountered Cannot receive message" );
   }
-  // send confirmation well received
   unsigned char discussion2[MaxBuff] = "okreceivedssa";
   send(ClientSocket, &discussion2, sizeof(discussion2), 0);
 
-  // DECAPS
+  // decapsulation
   printf("after decryption, verify both sides have same shared key : \n");
-  //Key-Decapsulation call; input: sk, c; output: shared-secret ss_b (rootKey);
   crypto_kem_dec(rootKey, ct, sk_server);
 
   // Functional verification: check if ss_a == ss_b?
@@ -184,17 +175,22 @@ void exchange( int ClientSocket) {
   }
 
   clock_t end = clock();
+  uint64_t CLOCK2=cpucycles();
+  uint64_t CLOCK_kem=CLOCK2-CLOCK1;
   double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
   printf("time computation KEM : %f [s] \n", time_spent);
   printf("-> our shared secret (ss_a, ss_b) becomes our rootkey \n");
   printf("\n");
   printf("time computation KEM : %f [s] \n", time_spent);
+  printf("cpu cycles computation KEM : %" PRIu64 "\n", CLOCK_kem);
   printf("\n");
   printf("---------------- DOUBLE RATCHET STEP W/ SABER -------------------\n");
 
   begin = clock();
+  CLOCK1=cpucycles();
+
   uint8_t ss_a_server[CRYPTO_BYTES];
-  // generate new key pair : key pair update
+
   crypto_kem_keypair(pk_server, sk_server);
 
   send(ClientSocket, &pk_server, sizeof(pk_server), 0);
@@ -224,8 +220,11 @@ void exchange( int ClientSocket) {
   printf("\n");
 
   end = clock();
+  CLOCK2=cpucycles();
   time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+  uint64_t CLOCK_double_ratchet=CLOCK2-CLOCK1;
   printf("time computation double ratchet step : %f [s] \n", time_spent);
+  printf("cpu cycles double ratchet : %" PRIu64 "\n", CLOCK_double_ratchet);
 
   printf("\n");
   printf("---------------------- START DISCUSSION -------------------------\n");
@@ -240,6 +239,7 @@ void exchange( int ClientSocket) {
       printf("--------- UPDATE KEYS IN MIDDLE OF THE DISCUSSION ---------- \n");
 
       begin = clock();
+      CLOCK1=cpucycles();
 
       crypto_kem_keypair(pk_server, sk_server);
 
@@ -264,16 +264,20 @@ void exchange( int ClientSocket) {
       printf("root key after KDF : %u \n", rootKey[1]);
       // CK IS MODIFIED
       printf("CKr after KDF: %u\n", *CK);
-      // NOT ss_a_client
+      // ss_a_client NOT MODIFIED
       printf("shared secret after KDF : %u \n", ss_a_server[1]);
 
       counter = 0;
 
       end = clock();
+      CLOCK2=cpucycles();
       double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+      uint64_t CLOCK_update=CLOCK2-CLOCK1;
       printf("\n");
       printf("time computation KEM : %f [s] \n", time_spent);
+      printf("cpu cycles updating keys : %" PRIu64 "\n", CLOCK_update);
       printf("\n");
+
       printf("--------------------- END UPDATE KEYS ----------------------- \n");
       printf("\n");
     }
@@ -282,26 +286,28 @@ void exchange( int ClientSocket) {
     printf("Write the message to encrypt :  ");
     fgets(mess_inter, MaxBuff, stdin);
     const unsigned char* mess = (const unsigned char*) mess_inter;
-    //printf("message to encrypt : %s\n", mess);
 
     unsigned char ciphertext_send[strlen((char*)mess) + crypto_aead_xchacha20poly1305_ietf_ABYTES];
     unsigned char nonce_send[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES];
 
     begin = clock();
+    CLOCK1=cpucycles();
     n = RatchetEncrypt(CK, mess, ciphertext_send, nonce_send, &state_Ns);
     counter += 1;
 
     // DECRYPTION
     unsigned long long len_plain = strlen((char*)mess);
 
-    // CLIENT NEEDS: mk, len_plain, ciphertext, nonce
     unsigned char plaintext_length[1] = {len_plain};
     send(ClientSocket,&plaintext_length,sizeof(plaintext_length), 0);
     send(ClientSocket, ciphertext_send, len_plain + crypto_aead_xchacha20poly1305_ietf_ABYTES, 0);
     send(ClientSocket, nonce_send,crypto_aead_xchacha20poly1305_ietf_NPUBBYTES, 0);
     end = clock();
+    CLOCK2=cpucycles();
     time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+    uint64_t CLOCK_encrypt=CLOCK2-CLOCK1;
     printf("time computation server side encrypt : %f [s] \n", time_spent);
+    printf("cpu cycles encryption : %" PRIu64 "\n", CLOCK_encrypt);
 
 
     // RECEIVE :
@@ -330,12 +336,11 @@ void exchange( int ClientSocket) {
 
 
 
-/* accepter une connexion et obtenir un socket client */
+// accepts connection and obtain client's socket
 
-//void StartExchange(int ServeurSocket, const char *chemin) { // a besoin d'une socket et d'une adresse
-void StartExchange(int ServeurSocket) { // a besoin d'une socket et d'une adresse
+void StartExchange(int ServeurSocket) {
   while(1) {
-  	struct sockaddr_in clientAdress; // structure IPV4 continent 3 champs : la famille, le port, l'adresse internte
+  	struct sockaddr_in clientAdress; // IPV4 structure
   	unsigned int clientLength = sizeof(clientAdress);
   	int clientSocket ;
 	printf("Waiting for connections\n");
@@ -346,9 +351,7 @@ void StartExchange(int ServeurSocket) { // a besoin d'une socket et d'une adress
 	}
 
   printf("connexion accepted \n");
-// lecture, écriture à partir du socket client :
 	printf("Client connected : %s\n", inet_ntoa(clientAdress.sin_addr)); // .sin_addr : on prend l'adresse ip en big endian de la structure adresse ---- inet_ntoa : converti l'adresse IPv4 en forme binaire
-  //exchange(clientSocket, chemin);
   exchange(clientSocket);
   }
 }
@@ -376,11 +379,8 @@ int main(int argc, char **argv) {
   // creer le socket
   ServeurSocket = makeSocket(port);
 
-  //printf("Server running on port %d at dir '%s'\n", port, chemin);
   printf("Server running on port %d\n", port);
 
-  // on va s'occuper de l'échange ( voir les fonctions)
-  //StartExchange(ServeurSocket,chemin);
   StartExchange(ServeurSocket);
 
 
