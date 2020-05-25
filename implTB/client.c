@@ -1,6 +1,6 @@
 #include <stdio.h>
-#include<stdint.h>
-#include<stdlib.h>
+#include <stdint.h>
+#include <stdlib.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <stdlib.h>
@@ -11,6 +11,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <assert.h>
+#include <time.h>
 
 #include "common.h"
 
@@ -209,6 +210,7 @@ int main(int argc, char *argv[]) {
 
     // RECEIVE
 
+    clock_t begin = clock();
     char *plaintext_length_recv;
     plaintext_length_recv = (char*) malloc( 1 );
     if (recv( ServerSocket, plaintext_length_recv, 1, 0) < 0){
@@ -234,6 +236,9 @@ int main(int argc, char *argv[]) {
     counter += 1;
     //printf("STATE_NS after decrypt : %d\n", state_Ns);
     //printf("SSA AFTER DECRYPT : %u \n", rootKey[1]);
+    clock_t end = clock();
+    double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+    printf("time computation client side decrypt : %f [s] \n", time_spent);
 
 
 

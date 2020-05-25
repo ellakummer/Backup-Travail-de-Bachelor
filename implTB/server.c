@@ -11,6 +11,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <assert.h>
+#include <time.h>
 
 #include <sodium.h>
 
@@ -118,6 +119,7 @@ void exchange( int ClientSocket) {
   printf("\n");
 
   printf("---------------- KEY AGREEMENT PROTOCOL : SABER -----------------\n");
+  clock_t begin = clock();
 
   uint8_t pk_server[CRYPTO_PUBLICKEYBYTES];
   uint8_t sk_server[CRYPTO_SECRETKEYBYTES];
@@ -181,10 +183,16 @@ void exchange( int ClientSocket) {
     }
   }
 
+  clock_t end = clock();
+  double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+  printf("time computation KEM : %f [s] \n", time_spent);
   printf("-> our shared secret (ss_a, ss_b) becomes our rootkey \n");
+  printf("\n");
+  printf("time computation KEM : %f [s] \n", time_spent);
   printf("\n");
   printf("---------------- DOUBLE RATCHET STEP W/ SABER -------------------\n");
 
+  begin = clock();
   uint8_t ss_a_server[CRYPTO_BYTES];
   // generate new key pair : key pair update
   crypto_kem_keypair(pk_server, sk_server);
@@ -213,6 +221,11 @@ void exchange( int ClientSocket) {
   printf("CKr after KDF: %u\n", *CK);
   // NOT ss_a_client
   printf("shared secret after KDF : %u \n", ss_a_server[1]);
+  printf("\n");
+
+  end = clock();
+  time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+  printf("time computation double ratchet step : %f [s] \n", time_spent);
 
   printf("\n");
   printf("---------------------- START DISCUSSION -------------------------\n");
@@ -225,6 +238,8 @@ void exchange( int ClientSocket) {
     if (counter == 4) {
       // updates key :
       printf("--------- UPDATE KEYS IN MIDDLE OF THE DISCUSSION ---------- \n");
+
+      begin = clock();
 
       crypto_kem_keypair(pk_server, sk_server);
 
@@ -253,6 +268,12 @@ void exchange( int ClientSocket) {
       printf("shared secret after KDF : %u \n", ss_a_server[1]);
 
       counter = 0;
+
+      end = clock();
+      double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+      printf("\n");
+      printf("time computation KEM : %f [s] \n", time_spent);
+      printf("\n");
       printf("--------------------- END UPDATE KEYS ----------------------- \n");
       printf("\n");
     }
@@ -266,6 +287,7 @@ void exchange( int ClientSocket) {
     unsigned char ciphertext_send[strlen((char*)mess) + crypto_aead_xchacha20poly1305_ietf_ABYTES];
     unsigned char nonce_send[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES];
 
+    begin = clock();
     n = RatchetEncrypt(CK, mess, ciphertext_send, nonce_send, &state_Ns);
     counter += 1;
 
@@ -277,6 +299,9 @@ void exchange( int ClientSocket) {
     send(ClientSocket,&plaintext_length,sizeof(plaintext_length), 0);
     send(ClientSocket, ciphertext_send, len_plain + crypto_aead_xchacha20poly1305_ietf_ABYTES, 0);
     send(ClientSocket, nonce_send,crypto_aead_xchacha20poly1305_ietf_NPUBBYTES, 0);
+    end = clock();
+    time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+    printf("time computation server side encrypt : %f [s] \n", time_spent);
 
 
     // RECEIVE :
