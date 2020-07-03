@@ -159,7 +159,6 @@ randombytes_init_saber(unsigned char *entropy_input,
   memcpy(seed_material, entropy_input, 48);
 
   if (! personalization_string) {
-    printf("HERE\n" );
     for (int i=0; i<48; i++) {
       personalization_string_internal[i] = buffer[i];
       seed_material[i] ^= personalization_string_internal[i];

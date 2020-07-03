@@ -106,10 +106,18 @@ int main(int argc, char *argv[]) {
 
   // received pk, so create its own pair pk, sk and will use to encode
   //Key-Encapsulation call; input: pk; output: ciphertext c, shared-secret ss_a;
+  clock_t begin_enc = clock();
   crypto_kem_enc(ct, rootKey, server_pk);
+  clock_t end_enc = clock();
+  double time_enc = (double)(end_enc - begin_enc) / CLOCKS_PER_SEC;
+  printf("time computation encapsulation : %f [s] \n", time_enc);
 
+  struct timespec tp;
+  clockid_t clk_id = CLOCK_MONOTONIC;
+  int result = clock_gettime(clk_id, &tp);
   send(ServerSocket, &ct, sizeof(ct), 0);
   printf("send to the server parameters needed to establish the shared secret \n");
+  printf("time computation tp.tv_nsec, ciphertext sent: %ld\n", tp.tv_nsec);
 
   // receive confirmation of ct well received
   char *dataConf;
@@ -206,8 +214,8 @@ int main(int argc, char *argv[]) {
 
     // RECEIVE
 
-    clock_t begin = clock();
-    uint64_t CLOCK1=cpucycles();
+    //clock_t begin = clock();
+    //uint64_t CLOCK1=cpucycles();
     char *plaintext_length_recv;
     plaintext_length_recv = (char*) malloc( 1 );
     if (recv( ServerSocket, plaintext_length_recv, 1, 0) < 0){
@@ -229,12 +237,12 @@ int main(int argc, char *argv[]) {
 
     n = ratchetDecrypt(length_plaintext_recv, ciphertext_recv, nonce_recv, CK, &state_Ns);
     counter += 1;
-    clock_t end = clock();
-    uint64_t CLOCK2=cpucycles();
-    double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-    uint64_t CLOCK_decrypt=CLOCK2-CLOCK1;
-    printf("time computation client side decrypt : %f [s] \n", time_spent);
-    printf("cpu cycles decryption : %" PRIu64 "\n", CLOCK_decrypt);
+    //clock_t end = clock();
+    //uint64_t CLOCK2=cpucycles();
+    //double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+    //uint64_t CLOCK_decrypt=CLOCK2-CLOCK1;
+    //printf("time computation client side decrypt : %f [s] \n", time_spent);
+    //printf("cpu cycles decryption : %" PRIu64 "\n", CLOCK_decrypt);
 
 
 
