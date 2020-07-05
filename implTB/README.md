@@ -1,4 +1,4 @@
-#Files : 
+# Files descriptions: 
 
 KDF_RK.* : implements the key derivation function. 
 
