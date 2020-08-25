@@ -1,9 +1,9 @@
 # How to run the program : 
-\begin{enumerate}
-    \item \emph{in src file : }make 
-    \item \emph{in 1st terminal : }./server \{port\}
-    \item \emph{in 2nd terminal : }./client \{client\} \{port\}
-\end{enumerate}
+
+1) in src file : make 
+2) in 1st terminal : ./server \{port\}
+3) in 2nd terminal : ./client \{client\} \{port\}
+
 # Files descriptions: 
 
 KDF_RK.* : implements the key derivation function. 
